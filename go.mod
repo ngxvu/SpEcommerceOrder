@@ -5,8 +5,6 @@ go 1.23.6
 require (
 	github.com/astaxie/beego v1.12.3
 	github.com/aviddiviner/gin-limit v0.0.0-20170918012823-43b5f79762c1
-	github.com/caarlos0/env/v6 v6.10.1
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/ericlagergren/decimal v0.0.0-20190420051523-6335edbaa640
 	github.com/gin-contrib/cors v1.7.5
 	github.com/gin-gonic/contrib v0.0.0-20250521004450-2b1292699c15
@@ -22,8 +20,8 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/swaggo/files v1.0.1
 	github.com/swaggo/gin-swagger v1.6.0
-	github.com/volatiletech/null/v8 v8.1.2
 	github.com/volatiletech/sqlboiler/v4 v4.18.0
+	golang.org/x/net v0.38.0
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/gorm v1.26.0
 	gorm.io/plugin/dbresolver v1.6.0
@@ -82,13 +80,13 @@ require (
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.12 // indirect
 	github.com/volatiletech/inflect v0.0.1 // indirect
+	github.com/volatiletech/null/v8 v8.1.2 // indirect
 	github.com/volatiletech/randomize v0.0.1 // indirect
 	github.com/volatiletech/strmangle v0.0.6 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/arch v0.15.0 // indirect
 	golang.org/x/crypto v0.36.0 // indirect
-	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/sync v0.12.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/text v0.23.0 // indirect
