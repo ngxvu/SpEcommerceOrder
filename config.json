@@ -1,0 +1,29 @@
+{
+  "Environment": "local",
+  "ServerPort": 8080,
+  "Secure": {
+    "JWTAccessSecure": "accesskeyyoumayneedtochangeit",
+    "JWTRefreshSecure": "refreshkeyyoumayneedtochangeit",
+    "JWTAccessTimeMinute": 15,
+    "JWTRefreshTimeHour": 168
+  },
+  "Databases": {
+    "Postgres": {
+      "URL": "postgres://root:123@localhost:5433/kimistore-db?sslmode=disable",
+      "DatabaseLogs": "kimistore-db",
+      "Read": {
+        "Hostname": "localhost",
+        "Name": "kimistore",
+        "Username": "root",
+        "Password": "k1mistor3!",
+        "Port": 5434,
+        "Parameter": "?parseTime=true"
+      }
+    }
+  },
+  "Domain": "http://local",
+  "Logging": {
+    "LOG_LEVEL": "debug",
+    "LOG_FORMAT": "json"
+  }
+}

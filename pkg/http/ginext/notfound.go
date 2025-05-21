@@ -1,7 +1,7 @@
 package ginext
 
 import (
-	"emission/pkg/http/logger"
+	"kimistore/pkg/http/logger"
 	"net/http"
 
 	"github.com/gin-gonic/gin"

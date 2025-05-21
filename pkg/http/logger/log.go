@@ -49,6 +49,11 @@ func Tag(tag string) *logrus.Entry {
 	return DefaultBaseEntry.WithField("tag", tag)
 }
 
+func WithTag(tag string) *logrus.Entry {
+	l := Tag(tag)
+	return l
+}
+
 func WithCtx(ctx context.Context, tag string) *logrus.Entry {
 	l := Tag(tag)
 	if requestID, ok := ctx.Value("x-request-id").(string); ok && requestID != "" {
@@ -59,4 +64,9 @@ func WithCtx(ctx context.Context, tag string) *logrus.Entry {
 
 func WithField(key string, value interface{}) *logrus.Entry {
 	return DefaultBaseEntry.WithField(key, value)
+}
+
+// LogError ghi log lỗi với thông điệp và chi tiết lỗi
+func LogError(log *logrus.Entry, err error, message string) {
+	log.WithError(err).Error("*** " + message + " ***")
 }

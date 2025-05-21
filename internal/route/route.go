@@ -1,40 +1,33 @@
 package route
 
 import (
-	handlers2 "emission/internal/handlers"
-	"emission/internal/repo/pg-gorm"
-	services2 "emission/internal/services"
-	"emission/pkg/http/ginext"
-	"emission/pkg/http/service"
+	"github.com/gin-gonic/gin"
+	"github.com/spf13/viper"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+	"kimistore/internal/handlers"
+	repo "kimistore/internal/repo/pg-gorm"
 )
 
-type Service struct {
-	*service.BaseApp
+func ApplicationV1Router(
+	newPgRepo repo.PGInterface,
+	router *gin.Engine,
+	config *viper.Viper,
+) {
+	routerV1 := router.Group("/v1")
+	{
+		// Swagger
+		routerV1.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+		// Migrations
+		MigrateRoutes(routerV1, handlers.NewMigrationHandler(newPgRepo))
+
+	}
 }
 
-func NewService() *Service {
-
-	s := &Service{
-		service.NewApp("emission Service", "v1.0"),
+func MigrateRoutes(router *gin.RouterGroup, controller *handlers.MigrationHandler) {
+	routerAuth := router.Group("/internal")
+	{
+		routerAuth.POST("/migrate", controller.Migrate)
 	}
-
-	pgGormClient := s.GetDB().Debug()
-	repo := pg_gorm.NewRepo(pgGormClient)
-	authService := services2.NewAuthService()
-	factorService := services2.NewFactoryService(repo, authService)
-	emissionService := services2.NewEmissionService(repo, natsPublishClient)
-	factorHandler := handlers2.NewFactoryHandlers(factorService)
-	emissionHandler := handlers2.NewEmissionHandlers(emissionService, authService)
-	migrationHandler := handlers2.NewMigrationHandler(pgGormClient)
-
-	// internal routes
-	s.Router.POST("/internal/migrate", migrationHandler.Migrate)
-
-	// public routes
-	v1Api := s.Router.Group("/api/v1")
-	v1Api.POST("/factories", ginext.WrapHandler(factorHandler.CreateFactory))
-	v1Api.GET("/emissions", ginext.WrapHandler(emissionHandler.ListEmission))
-	v1Api.POST("/emissions", ginext.WrapHandler(emissionHandler.CreateEmission))
-
-	return s
 }

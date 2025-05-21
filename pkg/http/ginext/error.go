@@ -1,11 +1,11 @@
 package ginext
 
 import (
-	"emission/pkg/http/logger"
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/go-errors/errors"
+	"kimistore/pkg/http/logger"
 	"net/http"
 )
 

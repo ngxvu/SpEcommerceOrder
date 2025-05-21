@@ -1,9 +1,9 @@
 package ginext
 
 import (
-	. "emission/pkg/http/common"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	. "kimistore/pkg/http/common"
 )
 
 func RequestIDMiddleware(c *gin.Context) {

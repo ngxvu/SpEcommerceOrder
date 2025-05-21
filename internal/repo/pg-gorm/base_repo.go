@@ -2,33 +2,33 @@ package pg_gorm
 
 import (
 	"context"
-	"emission/internal/models"
 	"gorm.io/gorm"
 	"time"
 )
 
-//go:generate mockgen -source base_repo.go -destination mocks/base_repo.go
-
 const (
-	generalQueryTimeout = 30 * time.Second
+	generalQueryTimeout = 60 * time.Second
 )
 
 type RepoPG struct {
-	DB    *gorm.DB
+	db    *gorm.DB
 	debug bool
 }
 
-func (r *RepoPG) GetRepo() *gorm.DB {
-	return r.DB
+func NewPGRepo(db *gorm.DB) PGInterface {
+	return &RepoPG{db: db}
 }
 
-func NewRepo(db *gorm.DB) IRepo {
-	return &RepoPG{DB: db}
-}
-
-type IRepo interface {
+type PGInterface interface {
 	GetRepo() *gorm.DB
-	CreateFactory(ctx context.Context, ob *models.Factory) (*models.Factory, error)
-	FilterEmission(ctx context.Context, f *models.EmissionFilter) (*models.EmissionFilterResult, error)
-	GetEmissionFactorByCountryCode(ctx context.Context, countryCode string) (*models.EmissionFactor, error)
+	DBWithTimeout(ctx context.Context) (*gorm.DB, context.CancelFunc)
+}
+
+func (r *RepoPG) GetRepo() *gorm.DB {
+	return r.db
+}
+
+func (r *RepoPG) DBWithTimeout(ctx context.Context) (*gorm.DB, context.CancelFunc) {
+	ctx, cancel := context.WithTimeout(ctx, generalQueryTimeout)
+	return r.db.WithContext(ctx), cancel
 }

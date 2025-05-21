@@ -2,11 +2,11 @@ package service
 
 import (
 	"context"
-	"emission/pkg/http/db"
-	ginext2 "emission/pkg/http/ginext"
-	"emission/pkg/http/logger"
 	"errors"
 	"fmt"
+	"kimistore/pkg/http/db"
+	ginext2 "kimistore/pkg/http/ginext"
+	"kimistore/pkg/http/logger"
 	"net"
 	"net/http"
 	"os"

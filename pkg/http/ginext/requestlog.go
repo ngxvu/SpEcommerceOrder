@@ -1,8 +1,8 @@
 package ginext
 
 import (
-	"emission/pkg/http/common"
-	"emission/pkg/http/logger"
+	"kimistore/pkg/http/common"
+	"kimistore/pkg/http/logger"
 	"time"
 
 	"github.com/gin-gonic/gin"
