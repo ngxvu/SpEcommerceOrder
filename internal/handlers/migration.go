@@ -43,6 +43,7 @@ func (m *MigrationHandler) BaseMigratePublic(ctx *gin.Context, tx *gorm.DB) erro
 		&model.User{},
 		&model.Post{},
 		&model.Product{},
+		&model.Media{},
 	}
 
 	tx.Config.NamingStrategy = schema.NamingStrategy{
