@@ -3,7 +3,6 @@ package utils
 import (
 	"errors"
 	"github.com/gin-gonic/gin"
-	"golang.org/x/net/context"
 	"net/http"
 )
 
@@ -19,24 +18,8 @@ const (
 	StatusGatewayTimeout      = "Gateway time out"
 	StatusConflict            = "Your input has been conflict with another data"
 	StatusTooManyRequests     = "Too many request"
+	StatusValidationError     = "Validation has been failed"
 )
-
-type MetaData struct {
-	TraceID string `json:"traceId"`
-	Success bool   `json:"success"`
-}
-
-func NewMetaData(ctx context.Context) *MetaData {
-	// Extract x-request-id from context
-	requestID, ok := ctx.Value("x-request-id").(string)
-	if !ok {
-		return nil
-	}
-	return &MetaData{
-		TraceID: requestID,
-		Success: true,
-	}
-}
 
 // Response trả về cho APP FE khi có lỗi
 type ErrorResponse struct {
@@ -124,6 +107,8 @@ func HandlerError(c *gin.Context) {
 			case StatusInternalServerError:
 				c.JSON(http.StatusInternalServerError, resp)
 				return
+			case StatusValidationError:
+				c.JSON(http.StatusBadRequest, resp)
 			default:
 				c.JSON(http.StatusInternalServerError, resp)
 				return

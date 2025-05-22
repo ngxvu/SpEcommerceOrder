@@ -51,7 +51,6 @@ func initializeApp() (*App, error) {
 
 func main() {
 	logger.Init(APPNAME)
-	setupLogger()
 
 	// Initialize application
 	app, err := initializeApp()
@@ -59,6 +58,8 @@ func main() {
 		logger.LogError(logger.WithTag("Backend|Main"), err, "failed to initialize application")
 		return
 	}
+
+	setupLogger()
 
 	// Setup and start server
 	router := gin.Default()

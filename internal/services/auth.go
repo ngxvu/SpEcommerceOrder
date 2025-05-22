@@ -5,7 +5,7 @@ package services
 //
 //type AuthInterface interface {
 //	CurrentUser(c *http.Request) (*uuid.UUID, error)
-//	Verify(tokenString string) (*jwt.StandardClaims, error)
+//	Verify(tokenString string) (*jwt_user.StandardClaims, error)
 //	CreateAccessToken(ctx context.Context, req models.CreateTokenRequest) (string, error)
 //}
 //
@@ -29,9 +29,9 @@ package services
 //	return &res, nil
 //}
 //
-//func (s *AuthService) Verify(tokenString string) (*jwt.StandardClaims, error) {
-//	token, err := jwt.ParseWithClaims(tokenString, &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
-//		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+//func (s *AuthService) Verify(tokenString string) (*jwt_user.StandardClaims, error) {
+//	token, err := jwt_user.ParseWithClaims(tokenString, &jwt_user.StandardClaims{}, func(token *jwt_user.Token) (interface{}, error) {
+//		if _, ok := token.Method.(*jwt_user.SigningMethodHMAC); !ok {
 //			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 //		}
 //		return []byte(conf.LoadEnv().JWTSecret), nil
@@ -39,7 +39,7 @@ package services
 //	if err != nil {
 //		return nil, err
 //	}
-//	claims, ok := token.Claims.(*jwt.StandardClaims)
+//	claims, ok := token.Claims.(*jwt_user.StandardClaims)
 //	if !ok || !token.Valid {
 //		return nil, errors.New("invalid token")
 //	}
@@ -52,7 +52,7 @@ package services
 //	expiredAt := time.Now().Add(time.Hour * time.Duration(req.NumHour)).Unix()
 //
 //	// Create the Claims
-//	claims := &jwt.StandardClaims{
+//	claims := &jwt_user.StandardClaims{
 //		ExpiresAt: expiredAt,
 //		Issuer:    req.ObjectID,
 //		Subject:   req.ObjectID,
@@ -62,7 +62,7 @@ package services
 //		ObjectID:       req.ObjectID,
 //	}
 //
-//	token := jwt.NewWithClaims(jwt.SigningMethodHS256, mainClaim)
+//	token := jwt_user.NewWithClaims(jwt_user.SigningMethodHS256, mainClaim)
 //	tokenString, err := token.SignedString([]byte(conf.LoadEnv().JWTSecret))
 //	if err != nil {
 //		l.WithError(errors.New("sign error")).Error("err_500: sign msg")

@@ -12,7 +12,9 @@ require (
 	github.com/go-errors/errors v1.5.1
 	github.com/go-gormigrate/gormigrate/v2 v2.1.3
 	github.com/go-playground/validator/v10 v10.26.0
+	github.com/golang-jwt/jwt/v4 v4.2.0
 	github.com/google/uuid v1.6.0
+	github.com/jinzhu/gorm v1.9.16
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/sirupsen/logrus v1.9.3
@@ -21,7 +23,7 @@ require (
 	github.com/swaggo/files v1.0.1
 	github.com/swaggo/gin-swagger v1.6.0
 	github.com/volatiletech/sqlboiler/v4 v4.18.0
-	golang.org/x/net v0.38.0
+	golang.org/x/crypto v0.36.0
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/gorm v1.26.0
 	gorm.io/plugin/dbresolver v1.6.0
@@ -86,7 +88,7 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/arch v0.15.0 // indirect
-	golang.org/x/crypto v0.36.0 // indirect
+	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/sync v0.12.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/text v0.23.0 // indirect

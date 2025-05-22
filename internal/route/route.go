@@ -22,6 +22,9 @@ func ApplicationV1Router(
 		// Migrations
 		MigrateRoutes(routerV1, handlers.NewMigrationHandler(newPgRepo))
 
+		// Auth for User
+		AuthUserRoutes(routerV1, handlers.NewAuthUserHandler(newPgRepo, config))
+
 	}
 }
 
@@ -29,5 +32,13 @@ func MigrateRoutes(router *gin.RouterGroup, controller *handlers.MigrationHandle
 	routerAuth := router.Group("/internal")
 	{
 		routerAuth.POST("/migrate", controller.Migrate)
+	}
+}
+
+func AuthUserRoutes(router *gin.RouterGroup, controller *handlers.AuthUserHandler) {
+	routerAuth := router.Group("/auth")
+	{
+		routerAuth.POST("/login", controller.Login)
+		routerAuth.POST("/register", controller.Register)
 	}
 }

@@ -1,12 +1,15 @@
 package utils
 
 import (
+	"crypto/sha256"
 	"database/sql/driver"
+	"encoding/hex"
 	"fmt"
 	"github.com/astaxie/beego/validation"
 	"github.com/ericlagergren/decimal"
 	"github.com/google/uuid"
 	"github.com/volatiletech/sqlboiler/v4/types"
+	"golang.org/x/crypto/bcrypt"
 	"reflect"
 	"time"
 )
@@ -92,4 +95,28 @@ func Sync(from interface{}, to interface{}) interface{} {
 		}
 	}
 	return to
+}
+
+func HashWithSHA256(input string) string {
+	hashed := sha256.Sum256([]byte(input))
+	return hex.EncodeToString(hashed[:])
+}
+
+// CheckPasswordHash compares a bcrypt hashed password with its possible plaintext equivalent.
+func CheckPasswordHash(password, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
+}
+
+// HashPassword hashes a plaintext password using bcrypt.
+func HashPassword(password string) (string, error) {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hashedPassword), nil
+}
+
+func UUIDtoString(uuid uuid.UUID) string {
+	return uuid.String()
 }
