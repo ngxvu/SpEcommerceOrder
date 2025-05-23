@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/viper"
 	model "kimistore/internal/models"
 	"kimistore/internal/utils"
+	"kimistore/internal/utils/app_errors"
 	"kimistore/pkg/http/logger"
 	"strconv"
 	"time"
@@ -58,7 +59,7 @@ func GenerateJWTTokenUser(context context.Context,
 		tokenTimeUnix *= time.Minute
 
 	default:
-		err = utils.AppError("Fail to Authorized", utils.StatusUnauthorized)
+		err = app_errors.AppError("Fail to Authorized", app_errors.StatusUnauthorized)
 		logger.LogError(log, err, "invalid token type")
 	}
 
@@ -127,26 +128,26 @@ func GetClaimsUserAndVerifyToken(tokenString string, tokenType string, config *v
 	JWTRefreshSecure := config.GetString(UserTokenTypeKeyName[tokenType])
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, utils.AppError("Fail to Authorized", utils.StatusUnauthorized)
+			return nil, app_errors.AppError("Fail to Authorized", app_errors.StatusUnauthorized)
 		}
 		return []byte(JWTRefreshSecure), nil
 	})
 	if err != nil {
-		return nil, utils.AppError("Time out", utils.StatusUnauthorized)
+		return nil, app_errors.AppError("Time out", app_errors.StatusUnauthorized)
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		if claims["type"] != tokenType {
-			return nil, utils.AppError("Fail to Authorized", utils.StatusUnauthorized)
+			return nil, app_errors.AppError("Fail to Authorized", app_errors.StatusUnauthorized)
 		}
 
 		var timeExpire = claims["exp"].(float64)
 		if time.Now().Unix() > int64(timeExpire) {
-			return nil, utils.AppError("Time out", utils.StatusUnauthorized)
+			return nil, app_errors.AppError("Time out", app_errors.StatusUnauthorized)
 		}
 		return claims, nil
 	}
-	return nil, utils.AppError("Fail to Authorized", utils.StatusUnauthorized)
+	return nil, app_errors.AppError("Fail to Authorized", app_errors.StatusUnauthorized)
 }
 
 func SecAuthUserMapper(user *model.User,

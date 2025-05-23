@@ -9,6 +9,8 @@ import (
 	model "kimistore/internal/models"
 	repo "kimistore/internal/repo/pg-gorm"
 	"kimistore/internal/utils"
+	"kimistore/internal/utils/app_errors"
+	"kimistore/internal/utils/sync_ob"
 	"kimistore/pkg/http/logger"
 	"kimistore/pkg/http/service/jwt_user"
 	"net/http"
@@ -37,7 +39,7 @@ func (a *AuthUserHandler) Login(ctx *gin.Context) {
 
 	err := ctx.ShouldBindJSON(&request)
 	if err != nil {
-		err = utils.AppError("Invalid request", utils.StatusValidationError)
+		err = app_errors.AppError("Invalid request", app_errors.StatusValidationError)
 		logger.LogError(log, err, " fail to bind json")
 		_ = ctx.Error(err)
 		return
@@ -55,7 +57,7 @@ func (a *AuthUserHandler) Login(ctx *gin.Context) {
 	isAuthenticated := utils.CheckPasswordHash(request.Password, user.Password)
 	if !isAuthenticated {
 		logger.LogError(log, err, "fail to check password")
-		err := utils.AppError("Fail to Authorized", utils.StatusUnauthorized)
+		err := app_errors.AppError("Fail to Authorized", app_errors.StatusUnauthorized)
 		_ = ctx.Error(err)
 		return
 	}
@@ -63,7 +65,7 @@ func (a *AuthUserHandler) Login(ctx *gin.Context) {
 	accessTokenClaims, err := jwt_user.GenerateJWTTokenUser(ctx, userID, "access", a.config)
 	if err != nil {
 		logger.LogError(log, err, "fail to generate access token")
-		err = utils.AppError("Fail to Authorized", utils.StatusUnauthorized)
+		err = app_errors.AppError("Fail to Authorized", app_errors.StatusUnauthorized)
 		_ = ctx.Error(err)
 		return
 	}
@@ -100,9 +102,9 @@ func (a *AuthUserHandler) GetUser(userMap map[string]interface{}, ctx context.Co
 
 	if err := tx.Where(userMap).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, utils.AppError("User not found", utils.StatusNotFound)
+			return nil, app_errors.AppError("User not found", app_errors.StatusNotFound)
 		}
-		err = utils.AppError("Failed to get user", utils.StatusInternalServerError)
+		err = app_errors.AppError("Failed to get user", app_errors.StatusInternalServerError)
 		return nil, err
 	}
 
@@ -124,7 +126,7 @@ func (a *AuthUserHandler) Register(ctx *gin.Context) {
 
 	err := ctx.ShouldBindJSON(&request)
 	if err != nil {
-		err = utils.AppError("Invalid request", utils.StatusValidationError)
+		err = app_errors.AppError("Invalid request", app_errors.StatusValidationError)
 		logger.LogError(log, err, " fail to bind json")
 		_ = ctx.Error(err)
 		return
@@ -132,7 +134,7 @@ func (a *AuthUserHandler) Register(ctx *gin.Context) {
 
 	existingOwnerCar, _ := a.GetUser(map[string]interface{}{"email": request.Email}, ctx)
 	if existingOwnerCar != nil {
-		err = utils.AppError("Email already exists", utils.StatusConflict)
+		err = app_errors.AppError("Email already exists", app_errors.StatusConflict)
 		logger.LogError(log, err, " email already exists")
 		_ = ctx.Error(err)
 		return
@@ -140,7 +142,7 @@ func (a *AuthUserHandler) Register(ctx *gin.Context) {
 
 	hashedPassword, err := utils.HashPassword(*request.Password)
 	if err != nil {
-		err = utils.AppError("Failed to create user", utils.StatusInternalServerError)
+		err = app_errors.AppError("Failed to create user", app_errors.StatusInternalServerError)
 		logger.LogError(log, err, "fail to hash password")
 		_ = ctx.Error(err)
 		return
@@ -148,11 +150,11 @@ func (a *AuthUserHandler) Register(ctx *gin.Context) {
 
 	ob := model.User{}
 
-	utils.Sync(request, &ob)
+	sync_ob.Sync(request, &ob)
 	ob.Password = hashedPassword
 
 	if err := tx.Create(&ob).Error; err != nil {
-		err = utils.AppError("Failed to create user", utils.StatusInternalServerError)
+		err = app_errors.AppError("Failed to create user", app_errors.StatusInternalServerError)
 		logger.LogError(log, err, "fail to create ob")
 		_ = ctx.Error(err)
 		return
