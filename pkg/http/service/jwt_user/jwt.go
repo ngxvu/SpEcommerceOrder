@@ -2,8 +2,6 @@ package jwt_user
 
 import (
 	"context"
-	"github.com/gin-gonic/gin"
-	"github.com/go-errors/errors"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/spf13/viper"
 	model "kimistore/internal/models"
@@ -91,63 +89,6 @@ func GenerateJWTTokenUser(context context.Context,
 		ExpirationTime: expirationTokenTime,
 	}
 	return
-}
-
-func DecodeUserJwtToID(ctx *gin.Context, config *viper.Viper) int {
-	JWTAccessSecure := config.GetString("SecureUser.JWTAccessSecure")
-	authHeader := ctx.GetHeader("Authorization")
-
-	if len(authHeader) < 7 || authHeader[:7] != "Bearer " {
-		_ = ctx.Error(errors.New("invalid authorization header"))
-		return 0
-	}
-
-	tokenString := authHeader[7:]
-	signature := []byte(JWTAccessSecure)
-
-	claims := jwt.MapClaims{}
-	_, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-		return signature, nil
-	})
-
-	if err != nil {
-		_ = ctx.Error(err)
-		return 0
-	}
-
-	id, ok := claims["id"].(float64)
-	if !ok {
-		_ = ctx.Error(errors.New("invalid token claims"))
-		return 0
-	}
-	return int(id)
-}
-
-func GetClaimsUserAndVerifyToken(tokenString string, tokenType string, config *viper.Viper) (claims jwt.MapClaims, err error) {
-
-	JWTRefreshSecure := config.GetString(UserTokenTypeKeyName[tokenType])
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, app_errors.AppError("Fail to Authorized", app_errors.StatusUnauthorized)
-		}
-		return []byte(JWTRefreshSecure), nil
-	})
-	if err != nil {
-		return nil, app_errors.AppError("Time out", app_errors.StatusUnauthorized)
-	}
-
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		if claims["type"] != tokenType {
-			return nil, app_errors.AppError("Fail to Authorized", app_errors.StatusUnauthorized)
-		}
-
-		var timeExpire = claims["exp"].(float64)
-		if time.Now().Unix() > int64(timeExpire) {
-			return nil, app_errors.AppError("Time out", app_errors.StatusUnauthorized)
-		}
-		return claims, nil
-	}
-	return nil, app_errors.AppError("Fail to Authorized", app_errors.StatusUnauthorized)
 }
 
 func SecAuthUserMapper(user *model.User,

@@ -13,7 +13,7 @@ import (
 	"kimistore/conf"
 	repo "kimistore/internal/repo/pg-gorm"
 	"kimistore/internal/route"
-	"kimistore/internal/utils"
+	"kimistore/internal/utils/app_errors"
 	"kimistore/pkg/http/db"
 	"kimistore/pkg/http/logger"
 	"kimistore/pkg/http/middlewares"
@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	APPNAME = "emission"
+	APPNAME = "kimistore"
 )
 
 type App struct {
@@ -79,7 +79,7 @@ func setupRouter(router *gin.Engine, configCors cors.Config, app *App) {
 	router.Use(cors.New(configCors))
 	router.Use(middlewares.RequestIDMiddleware())
 	router.Use(middlewares.RequestLogger(APPNAME))
-	router.Use(utils.HandlerError)
+	router.Use(app_errors.ErrorHandler)
 	router.Use(static.Serve("/image-storage/", static.LocalFile("./image-storage", true)))
 
 	route.ApplicationV1Router(

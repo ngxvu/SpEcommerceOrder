@@ -1,8 +1,9 @@
-package utils
+package app_errors
 
 import (
 	"errors"
 	"github.com/gin-gonic/gin"
+	"kimistore/internal/utils"
 	"net/http"
 )
 
@@ -54,7 +55,7 @@ type MessagesResponse struct {
 	Err  ErrorResponse `json:"error"`
 }
 
-func HandlerError(c *gin.Context) {
+func ErrorHandler(c *gin.Context) {
 	// Execute request handlers and then handle any app_errors
 	c.Next()
 	errs := c.Errors
@@ -63,7 +64,7 @@ func HandlerError(c *gin.Context) {
 		var err *ResponseError
 		ok := errors.As(errs[0].Err, &err)
 		if ok {
-			meta := NewMetaData(c.Request.Context())
+			meta := utils.NewMetaData(c.Request.Context())
 
 			resp := MessagesResponse{
 				Meta: MetaResponse{
