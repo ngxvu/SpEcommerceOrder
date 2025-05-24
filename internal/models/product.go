@@ -19,17 +19,6 @@ type Product struct {
 	Description    string          `json:"description;default:null"`
 }
 
-type CreateProductRequest struct {
-	CoverURL       *string   `json:"cover_url" binding:"required"`
-	Images         []*string `json:"images" binding:"required"`
-	Publish        *string   `json:"publish"`
-	Name           *string   `json:"name" binding:"required"`
-	Price          *float64  `json:"price" binding:"required"`
-	Sizes          []*string `json:"sizes" binding:"required"`
-	SubDescription *string   `json:"sub_description"`
-	Description    *string   `json:"description"`
-}
-
 type OriginalProduct struct {
 	ID      string   `json:"id"`
 	Gender  []string `json:"gender"`
@@ -79,6 +68,17 @@ type OriginalProduct struct {
 	} `json:"saleLabel"`
 	Sizes          []string `json:"sizes"`
 	SubDescription string   `json:"subDescription"`
+}
+
+type CreateProductRequest struct {
+	CoverURL       *string   `json:"cover_url" binding:"required"`
+	Images         []*string `json:"images" binding:"required"`
+	Publish        *string   `json:"publish"`
+	Name           *string   `json:"name" binding:"required"`
+	Price          *float64  `json:"price" binding:"required"`
+	Sizes          []*string `json:"sizes" binding:"required"`
+	SubDescription *string   `json:"sub_description"`
+	Description    *string   `json:"description"`
 }
 
 type GetProductResponseData struct {

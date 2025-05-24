@@ -43,6 +43,7 @@ func (p *ProductHandler) CreateProduct(ctx *gin.Context) {
 		err = app_errors.AppError("Failed to create product", app_errors.StatusInternalServerError)
 		logger.LogError(log, err, "Failed to create product")
 		_ = ctx.Error(err)
+		return
 	}
 	ctx.JSON(http.StatusOK, createdProduct)
 }
