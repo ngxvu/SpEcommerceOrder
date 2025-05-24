@@ -32,6 +32,11 @@ func ApplicationV1Router(
 		mediaService := services.NewMediaService(mediaRepo, newPgRepo)
 		MediaRoutes(routerV1, handlers.NewMediaHandler(newPgRepo, mediaService, config))
 
+		// Product
+		productRepo := repo.NewProductRepository()
+		productService := services.NewProductService(productRepo, newPgRepo)
+		ProductRoutes(routerV1, handlers.NewProductHandler(newPgRepo, productService))
+
 	}
 }
 
@@ -55,5 +60,16 @@ func MediaRoutes(router *gin.RouterGroup, handler *handlers.MediaHandler) {
 	{
 		//routerAuth.POST("/upload-media", handler.UploadMedia)
 		routerAuth.POST("/upload-images", handler.UploadListImage)
+	}
+}
+
+func ProductRoutes(router *gin.RouterGroup, handler *handlers.ProductHandler) {
+	routerAuth := router.Group("/product")
+	{
+		routerAuth.POST("/create", handler.CreateProduct)
+		routerAuth.POST("/detail/:id", handler.GetDetailProduct)
+		routerAuth.POST("/list", handler.GetListProduct)
+		routerAuth.PUT("/update/:id", handler.UpdateProduct)
+		routerAuth.DELETE("/delete/:id", handler.DeleteProduct)
 	}
 }
