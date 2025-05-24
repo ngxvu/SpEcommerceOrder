@@ -110,3 +110,7 @@ type UpdateProductRequest struct {
 	SubDescription *string   `json:"sub_description"`
 	Description    *string   `json:"description"`
 }
+type DeleteProductResponse struct {
+	Meta    *utils.MetaData `json:"meta"`
+	Message string          `json:"data"`
+}

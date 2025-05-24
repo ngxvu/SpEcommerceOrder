@@ -22,7 +22,7 @@ type ProductServiceInterface interface {
 	GetDetailProduct(ctx context.Context, id string) (*model.GetProductResponse, error)
 	GetListProduct(ctx context.Context, filter *paging.Filter) (*model.ListProductResponse, error)
 	UpdateProduct(ctx context.Context, id string, productRequest model.UpdateProductRequest) (*model.GetProductResponse, error)
-	DeleteProduct(ctx context.Context, id string) error
+	DeleteProduct(ctx context.Context, id string) (*model.DeleteProductResponse, error)
 }
 
 func NewProductService(repo repo.ProductRepositoryInterface, newRepo pgGorm.PGInterface) *ProductService {
@@ -196,7 +196,7 @@ func (s *ProductService) UpdateProduct(ctx context.Context, id string, productRe
 	return productResponse, nil
 }
 
-func (s *ProductService) DeleteProduct(ctx context.Context, id string) error {
+func (s *ProductService) DeleteProduct(ctx context.Context, id string) (*model.DeleteProductResponse, error) {
 	log := logger.WithTag("ProductService|DeleteProduct")
 
 	tx := s.newPgRepo.GetRepo().Begin()
@@ -205,13 +205,13 @@ func (s *ProductService) DeleteProduct(ctx context.Context, id string) error {
 	tx, cancel := s.newPgRepo.DBWithTimeout(ctx)
 	defer cancel()
 
-	err := s.repo.DeleteProduct(ctx, tx, id)
+	response, err := s.repo.DeleteProduct(ctx, tx, id)
 	if err != nil {
 		logger.LogError(log, err, "Error deleting product")
-		return err
+		return nil, err
 	}
 
 	tx.Commit()
 
-	return nil
+	return response, nil
 }

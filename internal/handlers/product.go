@@ -143,7 +143,7 @@ func (p *ProductHandler) DeleteProduct(ctx *gin.Context) {
 		return
 	}
 
-	err := p.productService.DeleteProduct(ctx, productID)
+	response, err := p.productService.DeleteProduct(ctx, productID)
 	if err != nil {
 		err = app_errors.AppError("Failed to delete product", app_errors.StatusInternalServerError)
 		logger.LogError(log, err, "Failed to delete product")
@@ -151,5 +151,5 @@ func (p *ProductHandler) DeleteProduct(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "Product deleted successfully"})
+	ctx.JSON(http.StatusOK, response)
 }

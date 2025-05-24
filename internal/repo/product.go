@@ -25,7 +25,7 @@ type ProductRepositoryInterface interface {
 	GetDetailProduct(ctx context.Context, tx *gorm.DB, id string) (*model.GetProductResponse, error)
 	GetListProduct(filter *paging.Filter, tx *gorm.DB) (*model.ListProductResponse, error)
 	UpdateProduct(ctx context.Context, tx *gorm.DB, id string, product model.Product) (*model.GetProductResponse, error)
-	DeleteProduct(ctx context.Context, tx *gorm.DB, id string) error
+	DeleteProduct(ctx context.Context, tx *gorm.DB, id string) (*model.DeleteProductResponse, error)
 }
 
 func (r *ProductRepository) ProductExistsByName(tx *gorm.DB, name string) (bool, error) {
@@ -239,7 +239,7 @@ func (r *ProductRepository) UpdateProduct(ctx context.Context, tx *gorm.DB, id s
 	}, nil
 }
 
-func (r *ProductRepository) DeleteProduct(ctx context.Context, tx *gorm.DB, id string) error {
+func (r *ProductRepository) DeleteProduct(ctx context.Context, tx *gorm.DB, id string) (*model.DeleteProductResponse, error) {
 	log := logger.WithTag("ProductRepository|DeleteProduct")
 
 	// Delete the product from the database using raw SQL
@@ -252,8 +252,11 @@ func (r *ProductRepository) DeleteProduct(ctx context.Context, tx *gorm.DB, id s
 	if result.Error != nil {
 		err := app_errors.AppError("Error deleting product", app_errors.StatusBadRequest)
 		logger.LogError(log, err, "Error deleting product")
-		return err
+		return nil, err
 	}
 
-	return nil
+	return &model.DeleteProductResponse{
+		Meta:    utils.NewMetaData(ctx),
+		Message: "Product deleted successfully",
+	}, nil
 }

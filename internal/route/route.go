@@ -37,6 +37,11 @@ func ApplicationV1Router(
 		productService := services.NewProductService(productRepo, newPgRepo)
 		ProductRoutes(routerV1, handlers.NewProductHandler(newPgRepo, productService))
 
+		// Post
+		postRepo := repo.NewPostRepository()
+		postService := services.NewPostService(postRepo, newPgRepo)
+		PostRoutes(routerV1, handlers.NewPostHandler(newPgRepo, postService))
+
 	}
 }
 
@@ -71,5 +76,16 @@ func ProductRoutes(router *gin.RouterGroup, handler *handlers.ProductHandler) {
 		routerAuth.POST("/list", handler.GetListProduct)
 		routerAuth.PUT("/update/:id", handler.UpdateProduct)
 		routerAuth.DELETE("/delete/:id", handler.DeleteProduct)
+	}
+}
+
+func PostRoutes(router *gin.RouterGroup, handler *handlers.PostHandler) {
+	routerAuth := router.Group("/post")
+	{
+		routerAuth.POST("/create", handler.CreatePost)
+		routerAuth.POST("/detail/:id", handler.GetDetailPost)
+		routerAuth.POST("/list", handler.GetListPost)
+		routerAuth.PUT("/update/:id", handler.UpdatePost)
+		routerAuth.DELETE("/delete/:id", handler.DeletePost)
 	}
 }
