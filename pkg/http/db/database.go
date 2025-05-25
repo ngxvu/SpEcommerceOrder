@@ -2,11 +2,10 @@ package db
 
 import (
 	"fmt"
-	"github.com/mitchellh/mapstructure"
-	"github.com/spf13/viper"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/plugin/dbresolver"
+	"kimistore/conf"
 	"log"
 	"sync"
 )
@@ -38,7 +37,7 @@ var (
 )
 
 // InitDatabase initializes and returns a singleton gorm database connection
-func InitDatabase(config *viper.Viper) (*gorm.DB, error) {
+func InitDatabase(config *conf.Config) (*gorm.DB, error) {
 	var err error
 	once.Do(func() {
 		dbInstance, err = initializeDatabase(config)
@@ -46,40 +45,11 @@ func InitDatabase(config *viper.Viper) (*gorm.DB, error) {
 	return dbInstance, err
 }
 
-// loadDatabaseConfig loads database configuration from viper config
-func loadDatabaseConfig(nameMap string, config *viper.Viper) (*DatabaseConfig, error) {
-	var dbConfig DatabaseConfig
-
-	err := mapstructure.Decode(config.GetStringMap(nameMap), &dbConfig)
-	if err != nil {
-		return nil, err
-	}
-
-	// Build connection string
-	dbConfig.Read.DriverConn = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s%s",
-		dbConfig.Read.Username, dbConfig.Read.Password, dbConfig.Read.Hostname,
-		dbConfig.Read.Port, dbConfig.Read.Name, dbConfig.Read.Parameter)
-
-	return &dbConfig, nil
-}
-
-// createPostgresDSN creates a Postgres DSN from database config
-func createPostgresDSN(dbConfig *DatabaseConfig) string {
-	return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		dbConfig.Read.Hostname, dbConfig.Read.Port, dbConfig.Read.Username,
-		dbConfig.Read.Password, dbConfig.Read.Name)
-}
-
 // initializeDatabase creates and configures the database connection
-func initializeDatabase(config *viper.Viper) (*gorm.DB, error) {
-	// Load configuration
-	dbConfig, err := loadDatabaseConfig("Databases.Postgres", config)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load database config: %w", err)
-	}
-
-	// Create connection string
-	dsn := createPostgresDSN(dbConfig)
+func initializeDatabase(config *conf.Config) (*gorm.DB, error) {
+	// Create connection string using environment config
+	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		config.PgHost, config.PgPort, config.PgUser, config.PgPassword, config.PgDatabase)
 
 	// Open database connection
 	gormDB, err := gorm.Open(postgres.New(postgres.Config{
