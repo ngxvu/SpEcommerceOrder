@@ -4,7 +4,6 @@ import (
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	"kimistore/conf"
 	"kimistore/internal/handlers"
 	"kimistore/internal/repo"
 	pgGorm "kimistore/internal/repo/pg-gorm"
@@ -14,7 +13,6 @@ import (
 func ApplicationV1Router(
 	newPgRepo pgGorm.PGInterface,
 	router *gin.Engine,
-	config *conf.Config,
 ) {
 	routerV1 := router.Group("/v1")
 	{

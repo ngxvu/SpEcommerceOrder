@@ -23,7 +23,6 @@ func SetupRouter(router *gin.Engine, configCors cors.Config, app *app_config.App
 	route.ApplicationV1Router(
 		app.PGRepo,
 		router,
-		app.Config,
 	)
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
