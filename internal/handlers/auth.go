@@ -50,8 +50,6 @@ func (a *AuthUserHandler) Login(ctx *gin.Context) {
 		return
 	}
 
-	userID := utils.UUIDtoString(user.ID)
-
 	isAuthenticated := utils.CheckPasswordHash(request.Password, user.Password)
 	if !isAuthenticated {
 		logger.LogError(log, err, "fail to check password")
@@ -60,7 +58,7 @@ func (a *AuthUserHandler) Login(ctx *gin.Context) {
 		return
 	}
 
-	accessTokenClaims, err := jwt_user.GenerateJWTTokenUser(ctx, userID, "access")
+	accessTokenClaims, err := jwt_user.GenerateJWTTokenUser(ctx, user.Role, "access")
 	if err != nil {
 		logger.LogError(log, err, "fail to generate access token")
 		err = app_errors.AppError("Fail to Authorized", app_errors.StatusUnauthorized)
@@ -68,7 +66,7 @@ func (a *AuthUserHandler) Login(ctx *gin.Context) {
 		return
 	}
 
-	refreshTokenClaims, err := jwt_user.GenerateJWTTokenUser(ctx, userID, "refresh")
+	refreshTokenClaims, err := jwt_user.GenerateJWTTokenUser(ctx, user.Role, "refresh")
 	if err != nil {
 		logger.LogError(log, err, " fail to generate refresh token")
 		_ = ctx.Error(err)

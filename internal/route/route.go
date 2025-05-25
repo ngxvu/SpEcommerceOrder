@@ -8,6 +8,7 @@ import (
 	"kimistore/internal/repo"
 	pgGorm "kimistore/internal/repo/pg-gorm"
 	"kimistore/internal/services"
+	"kimistore/pkg/http/middlewares"
 )
 
 func ApplicationV1Router(
@@ -67,23 +68,23 @@ func MediaRoutes(router *gin.RouterGroup, handler *handlers.MediaHandler) {
 }
 
 func ProductRoutes(router *gin.RouterGroup, handler *handlers.ProductHandler) {
-	routerAuth := router.Group("/product")
+	routerProduct := router.Group("/product", middlewares.AuthMiddleware())
 	{
-		routerAuth.POST("/create", handler.CreateProduct)
-		routerAuth.POST("/detail/:id", handler.GetDetailProduct)
-		routerAuth.POST("/list", handler.GetListProduct)
-		routerAuth.PUT("/update/:id", handler.UpdateProduct)
-		routerAuth.DELETE("/delete/:id", handler.DeleteProduct)
+		routerProduct.POST("/create", handler.CreateProduct)
+		routerProduct.POST("/detail/:id", handler.GetDetailProduct)
+		routerProduct.POST("/list", handler.GetListProduct)
+		routerProduct.PUT("/update/:id", handler.UpdateProduct)
+		routerProduct.DELETE("/delete/:id", handler.DeleteProduct)
 	}
 }
 
 func PostRoutes(router *gin.RouterGroup, handler *handlers.PostHandler) {
-	routerAuth := router.Group("/post")
+	routerPost := router.Group("/post", middlewares.AuthMiddleware())
 	{
-		routerAuth.POST("/create", handler.CreatePost)
-		routerAuth.POST("/detail/:id", handler.GetDetailPost)
-		routerAuth.POST("/list", handler.GetListPost)
-		routerAuth.PUT("/update/:id", handler.UpdatePost)
-		routerAuth.DELETE("/delete/:id", handler.DeletePost)
+		routerPost.POST("/create", handler.CreatePost)
+		routerPost.POST("/detail/:id", handler.GetDetailPost)
+		routerPost.POST("/list", handler.GetListPost)
+		routerPost.PUT("/update/:id", handler.UpdatePost)
+		routerPost.DELETE("/delete/:id", handler.DeletePost)
 	}
 }

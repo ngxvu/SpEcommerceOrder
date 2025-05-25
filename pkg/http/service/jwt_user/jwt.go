@@ -19,14 +19,14 @@ const (
 
 // Claims is a struct that contains the claims of the JWT
 type Claims struct {
-	ID        string `json:"id"`
+	Role      string `json:"role"`
 	TokenType string `json:"type"`
 	jwt.RegisteredClaims
 }
 
 // GenerateJWTToken generates a JWT token (refresh or access)
 func GenerateJWTTokenUser(context context.Context,
-	userID string,
+	userRole string,
 	tokenType string) (appToken *AppToken, err error) {
 
 	log := logger.WithCtx(context, "GenerateJWTTokenUser")
@@ -60,7 +60,7 @@ func GenerateJWTTokenUser(context context.Context,
 	expirationTokenTime := nowTime.Add(tokenTimeUnix)
 
 	tokenClaims := &Claims{
-		ID:        userID,
+		Role:      userRole,
 		TokenType: tokenType,
 		RegisteredClaims: jwt.RegisteredClaims{
 			// In JWT, the expiry time is expressed as unix milliseconds
