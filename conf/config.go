@@ -1,24 +1,52 @@
 package conf
 
 import (
-	"github.com/spf13/viper"
-	"log"
+	"fmt"
+	"github.com/caarlos0/env/v6"
+	"github.com/joho/godotenv"
 	"sync"
 )
 
+type Config struct {
+	// Database configs
+	PgUser     string `env:"PG_USER"`
+	PgPassword string `env:"PG_PASSWORD"`
+	PgHost     string `env:"PG_HOST"`
+	PgPort     string `env:"PG_PORT" envDefault:"5432"`
+	PgDatabase string `env:"PG_DATABASE"`
+
+	// Server configs
+	ServerPort string `env:"SERVER_PORT" envDefault:"8080"`
+
+	// DigitalOcean configs
+	S3SecretKey string `env:"S3_SECRET_KEY"`
+	S3AccessKey string `env:"S3_ACCESS_KEY"`
+	S3Bucket    string `env:"S3_BUCKET"`
+	S3Region    string `env:"S3_REGION"`
+	S3Endpoint  string `env:"S3_ENDPOINT"`
+
+	// JWT Security configs
+	JWTAccessSecure     string `env:"JWT_ACCESS_SECURE"`
+	JWTRefreshSecure    string `env:"JWT_REFRESH_SECURE"`
+	JWTAccessTimeMinute string `env:"JWT_ACCESS_TIME_MINUTE" envDefault:"15"`
+	JWTRefreshTimeHour  string `env:"JWT_REFRESH_TIME_HOUR" envDefault:"168"`
+}
+
 var (
 	configOnce sync.Once
-	config     *viper.Viper
+	config     Config
 )
 
-func GetConfig() *viper.Viper {
+func GetConfig() *Config {
 	configOnce.Do(func() {
-		config = viper.New()
-		config.SetConfigFile("config.json")
-		err := config.ReadInConfig()
+		err := godotenv.Load("./.env")
 		if err != nil {
-			log.Fatalf("Lỗi khi đọc tệp cấu hình: %v", err)
+			fmt.Println("Error loading .env file:", err)
+		}
+
+		if err := env.Parse(&config); err != nil {
+			fmt.Printf("Failed to parse environment variables: %v\n", err)
 		}
 	})
-	return config
+	return &config
 }
