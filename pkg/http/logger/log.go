@@ -14,8 +14,6 @@ var (
 	initOnce         sync.Once
 )
 
-// GetStringer describe an object that has capacity to return a string via GetString
-// It uses as Gin Context in case we want to cut off gin dependency here
 type GetStringer interface {
 	GetString(key string) string
 }
@@ -66,7 +64,16 @@ func WithField(key string, value interface{}) *logrus.Entry {
 	return DefaultBaseEntry.WithField(key, value)
 }
 
-// LogError ghi log lỗi với thông điệp và chi tiết lỗi
 func LogError(log *logrus.Entry, err error, message string) {
 	log.WithError(err).Error("*** " + message + " ***")
+}
+
+func SetupLogger() {
+	DefaultLogger.SetFormatter(&logrus.TextFormatter{
+		ForceColors:      true,
+		FullTimestamp:    true,
+		PadLevelText:     true,
+		ForceQuote:       true,
+		QuoteEmptyFields: true,
+	})
 }
