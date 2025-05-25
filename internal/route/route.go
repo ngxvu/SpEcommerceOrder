@@ -2,9 +2,9 @@ package route
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/spf13/viper"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"kimistore/conf"
 	"kimistore/internal/handlers"
 	"kimistore/internal/repo"
 	pgGorm "kimistore/internal/repo/pg-gorm"
@@ -14,7 +14,7 @@ import (
 func ApplicationV1Router(
 	newPgRepo pgGorm.PGInterface,
 	router *gin.Engine,
-	config *viper.Viper,
+	config *conf.Config,
 ) {
 	routerV1 := router.Group("/v1")
 	{
@@ -25,12 +25,12 @@ func ApplicationV1Router(
 		MigrateRoutes(routerV1, handlers.NewMigrationHandler(newPgRepo))
 
 		// Auth for User
-		AuthUserRoutes(routerV1, handlers.NewAuthUserHandler(newPgRepo, config))
+		AuthUserRoutes(routerV1, handlers.NewAuthUserHandler(newPgRepo))
 
 		// Media
 		mediaRepo := repo.NewMediaRepository()
 		mediaService := services.NewMediaService(mediaRepo, newPgRepo)
-		MediaRoutes(routerV1, handlers.NewMediaHandler(newPgRepo, mediaService, config))
+		MediaRoutes(routerV1, handlers.NewMediaHandler(newPgRepo, mediaService))
 
 		// Product
 		productRepo := repo.NewProductRepository()
