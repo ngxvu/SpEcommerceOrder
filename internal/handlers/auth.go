@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/gin-gonic/gin"
 	"github.com/go-errors/errors"
-	"github.com/spf13/viper"
 	"gorm.io/gorm"
 	model "kimistore/internal/models"
 	repo "kimistore/internal/repo/pg-gorm"
@@ -18,11 +17,10 @@ import (
 
 type AuthUserHandler struct {
 	newRepo repo.PGInterface
-	config  *viper.Viper
 }
 
-func NewAuthUserHandler(pgRepo repo.PGInterface, config *viper.Viper) *AuthUserHandler {
-	return &AuthUserHandler{newRepo: pgRepo, config: config}
+func NewAuthUserHandler(pgRepo repo.PGInterface) *AuthUserHandler {
+	return &AuthUserHandler{newRepo: pgRepo}
 }
 
 func (a *AuthUserHandler) Login(ctx *gin.Context) {
@@ -62,7 +60,7 @@ func (a *AuthUserHandler) Login(ctx *gin.Context) {
 		return
 	}
 
-	accessTokenClaims, err := jwt_user.GenerateJWTTokenUser(ctx, userID, "access", a.config)
+	accessTokenClaims, err := jwt_user.GenerateJWTTokenUser(ctx, userID, "access")
 	if err != nil {
 		logger.LogError(log, err, "fail to generate access token")
 		err = app_errors.AppError("Fail to Authorized", app_errors.StatusUnauthorized)
@@ -70,7 +68,7 @@ func (a *AuthUserHandler) Login(ctx *gin.Context) {
 		return
 	}
 
-	refreshTokenClaims, err := jwt_user.GenerateJWTTokenUser(ctx, userID, "refresh", a.config)
+	refreshTokenClaims, err := jwt_user.GenerateJWTTokenUser(ctx, userID, "refresh")
 	if err != nil {
 		logger.LogError(log, err, " fail to generate refresh token")
 		_ = ctx.Error(err)

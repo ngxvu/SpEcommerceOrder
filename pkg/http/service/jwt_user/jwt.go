@@ -3,7 +3,7 @@ package jwt_user
 import (
 	"context"
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/spf13/viper"
+	"kimistore/conf"
 	model "kimistore/internal/models"
 	"kimistore/internal/utils"
 	"kimistore/internal/utils/app_errors"
@@ -24,25 +24,17 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-var UserTokenTypeKeyName = map[string]string{
-	UserAccess:  "SecureUser.JWTAccessSecure",
-	UserRefresh: "SecureUser.JWTRefreshSecure",
-}
-
-var UserCarTokenTypeExpTime = map[string]string{
-	UserAccess:  "SecureUser.JWTAccessTimeMinute",
-	UserRefresh: "SecureUser.JWTRefreshTimeHour",
-}
-
 // GenerateJWTToken generates a JWT token (refresh or access)
 func GenerateJWTTokenUser(context context.Context,
 	userID string,
-	tokenType string,
-	config *viper.Viper) (appToken *AppToken, err error) {
+	tokenType string) (appToken *AppToken, err error) {
+
 	log := logger.WithCtx(context, "GenerateJWTTokenUser")
 
-	JWTSecureKey := config.GetString(UserTokenTypeKeyName[tokenType])
-	JWTExpTime := config.GetString(UserCarTokenTypeExpTime[tokenType])
+	config := conf.GetConfig()
+
+	JWTSecureKey := config.JWTAccessSecure
+	JWTExpTime := config.JWTAccessTimeMinute
 
 	tokenTimeConverted, err := strconv.ParseInt(JWTExpTime, 10, 64)
 	if err != nil {
