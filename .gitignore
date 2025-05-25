@@ -24,8 +24,7 @@ go.work.sum
 # env file
 .env
 
-# Local configuration file
-config.json
+db.env
 
 docker-compose.yml
 
