@@ -1,0 +1,18 @@
+services:
+  kimistore-db:
+    image: postgres:17-alpine
+    container_name: kimistore-db
+    env_file:
+      - ./db.env
+    ports:
+      - "5434:5432"
+    volumes:
+      - kimistore-data:/var/lib/postgresql/data
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+volumes:
+  kimistore-data:

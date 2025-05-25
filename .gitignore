@@ -26,6 +26,4 @@ go.work.sum
 
 db.env
 
-docker-compose.yml
-
 log_files
