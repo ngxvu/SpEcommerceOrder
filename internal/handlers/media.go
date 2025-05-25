@@ -3,7 +3,6 @@ package handlers
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/spf13/viper"
 	"image"
 	_ "image/gif"
 	_ "image/jpeg"
@@ -28,30 +27,19 @@ import (
 type MediaHandler struct {
 	db           pgGorm.PGInterface
 	mediaService services.MediaServiceInterface
-	config       *viper.Viper
 }
 
 func NewMediaHandler(
 	pgRepo pgGorm.PGInterface,
-	mediaService services.MediaServiceInterface,
-	config *viper.Viper) *MediaHandler {
+	mediaService services.MediaServiceInterface) *MediaHandler {
 	return &MediaHandler{
 		db:           pgRepo,
 		mediaService: mediaService,
-		config:       config,
 	}
 }
 
 func (m *MediaHandler) UploadListImage(ctx *gin.Context) {
 	log := logger.WithTag("MediaHandler|UploadListImage")
-
-	// Get S3 configuration
-	s3Config, err := s3_storage.GetS3Config(m.config)
-	if err != nil {
-		logger.LogError(log, err, "Error getting S3 configuration")
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
-		return
-	}
 
 	// Parse multipart form
 	form, err := ctx.MultipartForm()
@@ -206,7 +194,7 @@ func (m *MediaHandler) UploadListImage(ctx *gin.Context) {
 			defer imgFile.Close()
 
 			// Create S3 uploader
-			uploader, err := s3_storage.NewS3Uploader(s3Config)
+			uploader, err := s3_storage.NewS3Uploader()
 			if err != nil {
 				err = app_errors.AppError("Error creating S3 uploader", app_errors.StatusValidationError)
 				logger.LogError(log, err, "Failed to create S3 uploader")
