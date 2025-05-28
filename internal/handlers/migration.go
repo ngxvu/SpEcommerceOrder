@@ -30,6 +30,7 @@ func (m *MigrationHandler) BaseMigratePublic(ctx *gin.Context, tx *gorm.DB) erro
 		`CREATE SCHEMA IF NOT EXISTS public`,
 		`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`,
 		`CREATE TYPE inventory_status AS ENUM ('in stock', 'out of stock', 'low stock')`,
+		`CREATE TYPE publish AS ENUM ('draft', 'published')`,
 	}
 
 	for _, sql := range sqlCommands {
