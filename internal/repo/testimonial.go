@@ -101,12 +101,12 @@ func (r *TestimonialRepository) UpdateTestimonial(ctx context.Context, tx *gorm.
 		return nil, err
 	}
 
-	response := &model.GetTestimonialResponse{
-		Meta: utils.NewMetaData(ctx),
-		Data: &testimonial,
+	detailTestimonial, err := r.GetDetailTestimonial(ctx, tx, id)
+	if err != nil {
+		return nil, err
 	}
 
-	return response, nil
+	return detailTestimonial, nil
 }
 
 func (r *TestimonialRepository) DeleteTestimonial(ctx context.Context, tx *gorm.DB, id string) (*model.DeleteTestimonialResponse, error) {
@@ -120,7 +120,7 @@ func (r *TestimonialRepository) DeleteTestimonial(ctx context.Context, tx *gorm.
 
 	response := &model.DeleteTestimonialResponse{
 		Meta: utils.NewMetaData(ctx),
-		Data: &id,
+		Data: "Testimonial deleted successfully",
 	}
 
 	return response, nil

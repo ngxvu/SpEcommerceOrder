@@ -32,5 +32,5 @@ type ListTestimonialResponse struct {
 
 type DeleteTestimonialResponse struct {
 	Meta *utils.MetaData `json:"meta"`
-	Data *string         `json:"data"`
+	Data string          `json:"data"`
 }

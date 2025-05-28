@@ -88,14 +88,14 @@ func (h *TestimonialHandler) GetListTestimonial(ctx *gin.Context) {
 		Pager: paging.NewPagerWithGinCtx(ctx),
 	}
 
-	testimonials, err := h.TestimonialService.GetListTestimonial(ctx, filter)
+	rs, err := h.TestimonialService.GetListTestimonial(ctx, filter)
 	if err != nil {
 		logger.LogError(log, err, "failed to get list of testimonials")
 		_ = ctx.Error(err)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, testimonials)
+	ctx.JSON(http.StatusOK, paging.NewBodyPaginated(ctx, rs.Records, rs.Filter.Pager))
 }
 
 func (h *TestimonialHandler) UpdateTestimonial(ctx *gin.Context) {
