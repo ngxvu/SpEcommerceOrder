@@ -43,15 +43,29 @@ func (r *ProductRepository) CreateProduct(ctx context.Context, tx *gorm.DB, prod
 	log := logger.WithTag("ProductRepository|CreateProduct")
 
 	rawSQL := `
-		INSERT INTO "products" 
-			("deleted_at","cover_url","images","publish","name","price","sizes","sub_description","description") 
-		VALUES 
-			(NULL, ?, ?, ?, ?, ?, ?, ?, ?)
-		RETURNING id
-	`
+	INSERT INTO "products" 
+		("deleted_at","cover_url","images","publish","name","price","quantity","inventory_type","sizes","sub_description","description") 
+	VALUES 
+		(NULL, ?, ?::jsonb, ?::publish, ?, ?, ?, ?::inventory_status, ?::jsonb, ?, ?)
+	RETURNING id
+`
 
 	imagesJSON, _ := json.Marshal(product.Images)
 	sizesJSON, _ := json.Marshal(product.Sizes)
+
+	// Validate publish value
+	if product.Publish != "draft" && product.Publish != "published" {
+		err := app_errors.AppError("Invalid publish value. Must be 'draft' or 'published'", app_errors.StatusBadRequest)
+		logger.LogError(log, err, "Invalid publish value")
+		return nil, err
+	}
+
+	// Validate inventory_type value
+	if product.InventoryType != "in stock" && product.InventoryType != "out of stock" && product.InventoryType != "low stock" {
+		err := app_errors.AppError("Invalid inventory_type value. Must be 'in stock', 'out of stock', or 'low stock'", app_errors.StatusBadRequest)
+		logger.LogError(log, err, "Invalid inventory_type value")
+		return nil, err
+	}
 
 	var productID string
 	err := tx.Raw(rawSQL,
@@ -60,6 +74,8 @@ func (r *ProductRepository) CreateProduct(ctx context.Context, tx *gorm.DB, prod
 		product.Publish,
 		product.Name,
 		product.Price,
+		product.Quantity,
+		product.InventoryType,
 		string(sizesJSON),
 		product.SubDescription,
 		product.Description,

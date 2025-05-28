@@ -40,7 +40,6 @@ func (p *ProductHandler) CreateProduct(ctx *gin.Context) {
 	// Call the service to create the product
 	createdProduct, err := p.productService.CreateProduct(ctx, product)
 	if err != nil {
-		err = app_errors.AppError("Failed to create product", app_errors.StatusInternalServerError)
 		logger.LogError(log, err, "Failed to create product")
 		_ = ctx.Error(err)
 		return
