@@ -166,6 +166,8 @@ func (r *ProductRepository) mapProductToResponseData(product model.Product) mode
 	responseData.Product.ID = productID
 	responseData.Product.Name = product.Name
 	responseData.Product.Price = product.Price
+	responseData.Product.Quantity = product.Quantity
+	responseData.Product.InventoryType = product.InventoryType
 	responseData.Product.CoverURL = product.CoverURL
 	responseData.Product.Publish = product.Publish
 	responseData.Product.Description = product.Description

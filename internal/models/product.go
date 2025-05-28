@@ -14,6 +14,8 @@ type Product struct {
 	Publish        string          `json:"publish" gorm:"type:text;default:'draft'"`
 	Name           string          `json:"name" gorm:"type:varchar(255);not null"`
 	Price          float64         `json:"price" gorm:"type:decimal(10,2);not null"`
+	Quantity       int             `json:"quantity" gorm:"type:int;default:0"`
+	InventoryType  string          `json:"inventory_type" gorm:"type:text;default:'in stock'"`
 	Sizes          *postgres.Jsonb `json:"sizes" gorm:"type:jsonb"`
 	SubDescription string          `json:"sub_description;default:null"`
 	Description    string          `json:"description;default:null"`
@@ -76,6 +78,8 @@ type CreateProductRequest struct {
 	Publish        *string   `json:"publish"`
 	Name           *string   `json:"name" binding:"required"`
 	Price          *float64  `json:"price" binding:"required"`
+	Quantity       *int      `json:"quantity" binding:"required"`
+	InventoryType  *string   `json:"inventory_type" binding:"required"`
 	Sizes          []*string `json:"sizes" binding:"required"`
 	SubDescription *string   `json:"sub_description"`
 	Description    *string   `json:"description"`
@@ -107,6 +111,8 @@ type UpdateProductRequest struct {
 	Name           *string   `json:"name"`
 	Price          *float64  `json:"price"`
 	Sizes          []*string `json:"sizes"`
+	Quantity       *int      `json:"quantity"`
+	InventoryType  *string   `json:"inventory_type"`
 	SubDescription *string   `json:"sub_description"`
 	Description    *string   `json:"description"`
 }
