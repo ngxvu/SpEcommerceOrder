@@ -74,6 +74,19 @@ func (m *MigrationHandler) MigrateCmdPublic(ctx *gin.Context) {
 				return m.BaseMigratePublic(ctx, tx)
 			},
 		},
+		{
+			ID: "20220523172949",
+			Migrate: func(tx *gorm.DB) error {
+				models := []interface{}{
+					&model.Testimonial{},
+				}
+
+				if err := tx.AutoMigrate(models...); err != nil {
+					return err
+				}
+				return nil
+			},
+		},
 	})
 
 	if err := migrate.Migrate(); err != nil {

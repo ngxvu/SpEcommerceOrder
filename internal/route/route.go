@@ -41,6 +41,11 @@ func ApplicationV1Router(
 		postService := services.NewPostService(postRepo, newPgRepo)
 		PostRoutes(routerV1, handlers.NewPostHandler(newPgRepo, postService))
 
+		// Testimonial
+		testimonialRepo := repo.NewTestimonialRepository()
+		testimonialService := services.NewTestimonialService(testimonialRepo, newPgRepo)
+		TestimonialRoutes(routerV1, handlers.NewTestimonialHandler(newPgRepo, testimonialService))
+
 	}
 }
 
@@ -86,5 +91,16 @@ func PostRoutes(router *gin.RouterGroup, handler *handlers.PostHandler) {
 		routerPost.POST("/list", handler.GetListPost)
 		routerPost.PUT("/update/:id", handler.UpdatePost)
 		routerPost.DELETE("/delete/:id", handler.DeletePost)
+	}
+}
+
+func TestimonialRoutes(router *gin.RouterGroup, handler *handlers.TestimonialHandler) {
+	routerTestimonial := router.Group("/testimonial", middlewares.AuthMiddleware())
+	{
+		routerTestimonial.POST("/create", handler.CreateTestimonial)
+		routerTestimonial.POST("/detail/:id", handler.GetDetailTestimonial)
+		routerTestimonial.POST("/list", handler.GetListTestimonial)
+		routerTestimonial.PUT("/update/:id", handler.UpdateTestimonial)
+		routerTestimonial.DELETE("/delete/:id", handler.DeleteTestimonial)
 	}
 }
