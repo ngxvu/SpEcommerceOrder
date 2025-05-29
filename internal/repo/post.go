@@ -7,7 +7,6 @@ import (
 	"kimistore/internal/utils"
 	"kimistore/internal/utils/app_errors"
 	"kimistore/pkg/http/logger"
-	"kimistore/pkg/http/paging"
 	"time"
 )
 
@@ -21,7 +20,7 @@ func NewPostRepository() *PostRepository {
 type PostRepositoryInterface interface {
 	CreatePost(ctx context.Context, tx *gorm.DB, postRequest model.CreatePostRequest) (*model.GetPostResponse, error)
 	GetDetailPost(ctx context.Context, tx *gorm.DB, id string) (*model.GetPostResponse, error)
-	GetListPost(filter *paging.Filter, pgRepo *gorm.DB) (*model.ListPostResponse, error)
+	GetListPost(filter *model.ListPostFilter, pgRepo *gorm.DB) (*model.ListPostResponse, error)
 	UpdatePost(ctx context.Context, tx *gorm.DB, id string, postRequest model.UpdatePostRequest) (*model.GetPostResponse, error)
 	DeletePost(ctx context.Context, tx *gorm.DB, id string) (*model.DeletePostResponse, error)
 }
@@ -130,7 +129,7 @@ func (p *PostRepository) GetDetailPost(ctx context.Context, tx *gorm.DB, id stri
 	return response, nil
 }
 
-func (r *PostRepository) GetListPost(filter *paging.Filter, pgRepo *gorm.DB) (*model.ListPostResponse, error) {
+func (r *PostRepository) GetListPost(filter *model.ListPostFilter, pgRepo *gorm.DB) (*model.ListPostResponse, error) {
 
 	log := logger.WithTag("PostRepository|GetListPost")
 
@@ -140,6 +139,12 @@ func (r *PostRepository) GetListPost(filter *paging.Filter, pgRepo *gorm.DB) (*m
 		Filter:  filter,
 		Records: []model.Post{},
 	}
+
+	if filter.PostFilterRequest.Publish != nil {
+		tx = tx.Where("publish = ?", *filter.PostFilterRequest.Publish)
+	}
+
+	filter.Pager.SortableFields = []string{"created_at"}
 
 	pager := filter.Pager
 

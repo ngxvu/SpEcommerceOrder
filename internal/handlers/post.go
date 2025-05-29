@@ -74,7 +74,7 @@ func (p *PostHandler) GetDetailPost(ctx *gin.Context) {
 func (p *PostHandler) GetListPost(ctx *gin.Context) {
 	log := logger.WithTag("Backend|PostHandler|GetListPost")
 
-	var req paging.Param
+	var req model.PostFilterRequest
 
 	err := ctx.BindQuery(&req)
 	if err != nil {
@@ -84,9 +84,9 @@ func (p *PostHandler) GetListPost(ctx *gin.Context) {
 		return
 	}
 
-	filter := &paging.Filter{
-		Param: req,
-		Pager: paging.NewPagerWithGinCtx(ctx),
+	filter := &model.ListPostFilter{
+		PostFilterRequest: req,
+		Pager:             paging.NewPagerWithGinCtx(ctx),
 	}
 
 	rs, err := p.postService.GetListPost(ctx, filter)

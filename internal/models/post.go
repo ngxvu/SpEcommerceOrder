@@ -77,13 +77,22 @@ type GetPostResponse struct {
 	Data *GetPostResponseData `json:"data"`
 }
 
+type PostFilterRequest struct {
+	Publish *string `json:"publish" form:"publish"`
+}
+
+type ListPostFilter struct {
+	PostFilterRequest
+	Pager *paging.Pager
+}
+
 type ListPostResult struct {
-	Filter  *paging.Filter
+	Filter  *ListPostFilter
 	Records []Post `json:"posts"`
 }
 
 type ListPostResponse struct {
-	Filter  *paging.Filter
+	Filter  *ListPostFilter
 	Records []OriginalPost `json:"posts"`
 }
 

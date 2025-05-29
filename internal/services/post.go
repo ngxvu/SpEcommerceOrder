@@ -5,8 +5,8 @@ import (
 	model "kimistore/internal/models"
 	"kimistore/internal/repo"
 	pgGorm "kimistore/internal/repo/pg-gorm"
+	"kimistore/internal/utils/app_errors"
 	"kimistore/pkg/http/logger"
-	"kimistore/pkg/http/paging"
 )
 
 type PostService struct {
@@ -17,7 +17,7 @@ type PostService struct {
 type PostServiceInterface interface {
 	CreatePost(ctx context.Context, postRequest model.CreatePostRequest) (*model.GetPostResponse, error)
 	GetDetailPost(ctx context.Context, id string) (*model.GetPostResponse, error)
-	GetListPost(ctx context.Context, filter *paging.Filter) (*model.ListPostResponse, error)
+	GetListPost(ctx context.Context, filter *model.ListPostFilter) (*model.ListPostResponse, error)
 	UpdatePost(ctx context.Context, id string, postRequest model.UpdatePostRequest) (*model.GetPostResponse, error)
 	DeletePost(ctx context.Context, id string) (*model.DeletePostResponse, error)
 }
@@ -68,8 +68,14 @@ func (s *PostService) GetDetailPost(ctx context.Context, id string) (*model.GetP
 	return post, nil
 }
 
-func (s *PostService) GetListPost(ctx context.Context, filter *paging.Filter) (*model.ListPostResponse, error) {
+func (s *PostService) GetListPost(ctx context.Context, filter *model.ListPostFilter) (*model.ListPostResponse, error) {
 	log := logger.WithTag("PostService|GetListPost")
+
+	if filter.Publish != nil && *filter.Publish != "published" && *filter.Publish != "draft" {
+		err := app_errors.AppError("Must be 'published' or 'draft'", app_errors.StatusValidationError)
+		logger.LogError(log, err, "Invalid publish status")
+		return nil, err
+	}
 
 	tx, cancel := s.newPgRepo.DBWithTimeout(ctx)
 	defer cancel()
