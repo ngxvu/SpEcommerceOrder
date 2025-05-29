@@ -76,7 +76,7 @@ func ProductRoutes(router *gin.RouterGroup, handler *handlers.ProductHandler) {
 	routerProduct := router.Group("/product", middlewares.AuthMiddleware())
 	{
 		routerProduct.POST("/create", handler.CreateProduct)
-		routerProduct.POST("/detail/:id", handler.GetDetailProduct)
+		routerProduct.GET("/detail/:id", handler.GetDetailProduct)
 		routerProduct.GET("/list", handler.GetListProduct)
 		routerProduct.POST("/filter", handler.ListProductFilterAdvance)
 		routerProduct.PUT("/update/:id", handler.UpdateProduct)
@@ -88,8 +88,8 @@ func PostRoutes(router *gin.RouterGroup, handler *handlers.PostHandler) {
 	routerPost := router.Group("/post", middlewares.AuthMiddleware())
 	{
 		routerPost.POST("/create", handler.CreatePost)
-		routerPost.POST("/detail/:id", handler.GetDetailPost)
-		routerPost.POST("/list", handler.GetListPost)
+		routerPost.GET("/detail/:id", handler.GetDetailPost)
+		routerPost.GET("/list", handler.GetListPost)
 		routerPost.PUT("/update/:id", handler.UpdatePost)
 		routerPost.DELETE("/delete/:id", handler.DeletePost)
 	}
@@ -99,8 +99,8 @@ func TestimonialRoutes(router *gin.RouterGroup, handler *handlers.TestimonialHan
 	routerTestimonial := router.Group("/testimonial", middlewares.AuthMiddleware())
 	{
 		routerTestimonial.POST("/create", handler.CreateTestimonial)
-		routerTestimonial.POST("/detail/:id", handler.GetDetailTestimonial)
-		routerTestimonial.POST("/list", handler.GetListTestimonial)
+		routerTestimonial.GET("/detail/:id", handler.GetDetailTestimonial)
+		routerTestimonial.GET("/list", handler.GetListTestimonial)
 		routerTestimonial.PUT("/update/:id", handler.UpdateTestimonial)
 		routerTestimonial.DELETE("/delete/:id", handler.DeleteTestimonial)
 	}
