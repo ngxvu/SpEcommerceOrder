@@ -74,19 +74,18 @@ func (p *ProductHandler) GetListProduct(ctx *gin.Context) {
 
 	log := logger.WithTag("Backend|ProductHandler|GetListProduct")
 
-	var req paging.Param
+	var req model.ProductFilterRequest
 
-	err := ctx.BindQuery(&req)
-	if err != nil {
-		err = app_errors.AppError("fail to get pagination", app_errors.StatusValidationError)
+	if err := ctx.BindQuery(&req); err != nil {
+		err = app_errors.AppError("fail to bind query parameters", app_errors.StatusValidationError)
 		logger.LogError(log, err, "Failed to bind query")
 		_ = ctx.Error(err)
 		return
 	}
 
-	filter := &paging.Filter{
-		Param: req,
-		Pager: paging.NewPagerWithGinCtx(ctx),
+	filter := &model.ListProductFilter{
+		ProductFilterRequest: req,
+		Pager:                paging.NewPagerWithGinCtx(ctx),
 	}
 
 	rs, err := p.productService.GetListProduct(ctx, filter)
@@ -96,6 +95,35 @@ func (p *ProductHandler) GetListProduct(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, paging.NewBodyPaginated(ctx, rs.Records, rs.Filter.Pager))
+}
+
+func (p *ProductHandler) ListProductFilterAdvance(ctx *gin.Context) {
+	log := logger.WithTag("Backend|ProductHandler|ListProductFilterAdvance")
+
+	var req model.ColumnFilterParam
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		err = app_errors.AppError("Invalid request", app_errors.StatusValidationError)
+		logger.LogError(log, err, "Failed to bind JSON")
+		_ = ctx.Error(err)
+		return
+	}
+
+	rs, err := p.productService.ListProductFilterAdvance(ctx, &req)
+	if err != nil {
+		logger.LogError(log, err, "Failed to filter products")
+		_ = ctx.Error(err)
+		return
+	}
+
+	// Create pager for response
+	pager := &paging.Pager{
+		Page:      req.Page,
+		PageSize:  req.PageSize,
+		TotalRows: int64(len(rs.Records)),
+	}
+
+	ctx.JSON(http.StatusOK, paging.NewBodyPaginated(ctx, rs.Records, pager))
 }
 
 func (p *ProductHandler) UpdateProduct(ctx *gin.Context) {

@@ -23,7 +23,8 @@ type ProductRepositoryInterface interface {
 	ProductExistsByName(tx *gorm.DB, name string) (bool, error)
 	CreateProduct(ctx context.Context, tx *gorm.DB, product model.Product) (*model.GetProductResponse, error)
 	GetDetailProduct(ctx context.Context, tx *gorm.DB, id string) (*model.GetProductResponse, error)
-	GetListProduct(filter *paging.Filter, tx *gorm.DB) (*model.ListProductResponse, error)
+	GetListProduct(filter *model.ListProductFilter, tx *gorm.DB) (*model.ListProductResponse, error)
+	FilterColumnProduct(ctx context.Context, filter *model.ColumnFilterParam, pager *paging.Pager, tx *gorm.DB) (*model.ListProductResponse, error)
 	UpdateProduct(ctx context.Context, tx *gorm.DB, id string, product model.Product) (*model.GetProductResponse, error)
 	DeleteProduct(ctx context.Context, tx *gorm.DB, id string) (*model.DeleteProductResponse, error)
 }
@@ -119,8 +120,7 @@ func (r *ProductRepository) GetDetailProduct(ctx context.Context, tx *gorm.DB, i
 	}, nil
 }
 
-func (r *ProductRepository) GetListProduct(filter *paging.Filter, pgRepo *gorm.DB) (*model.ListProductResponse, error) {
-
+func (r *ProductRepository) GetListProduct(filter *model.ListProductFilter, pgRepo *gorm.DB) (*model.ListProductResponse, error) {
 	log := logger.WithTag("ProductRepository|GetListProduct")
 
 	tx := pgRepo.Model(&model.Product{})
@@ -130,16 +130,60 @@ func (r *ProductRepository) GetListProduct(filter *paging.Filter, pgRepo *gorm.D
 		Records: []model.Product{},
 	}
 
-	filter.Pager.SortableFields = []string{"name"}
+	if filter.DefaultSearch != nil {
+		searchTerm := "%" + *filter.DefaultSearch + "%"
+		tx = tx.Where("name ILIKE ?", searchTerm)
+	}
+
+	if filter.SearchByStock != nil {
+		searchStock := "%" + *filter.SearchByStock + "%"
+		tx = tx.Where("inventory_type ILIKE ?", searchStock)
+	}
+
+	if filter.SearchByPrice != nil {
+		searchPrice := *filter.SearchByPrice
+		tx = tx.Where("price::text LIKE ?", "%"+searchPrice+"%")
+	}
+
+	if filter.SearchByPublish != nil {
+		searchPublish := *filter.SearchByPublish
+		tx = tx.Where("publish LIKE ?", "%"+searchPublish+"%")
+	}
+
+	if filter.SearchByYear != nil {
+		searchYear := *filter.SearchByYear
+		tx = tx.Where("EXTRACT(YEAR FROM created_at) = ?", searchYear)
+	}
+
+	if filter.FilterByStock != nil {
+		filterByStock := *filter.FilterByStock
+		if filterByStock == "in_stock" || filterByStock == "out_of_stock" || filterByStock == "low_stock" {
+			tx = tx.Where("inventory_type = ?", filterByStock)
+		} else {
+			err := app_errors.AppError("Must be 'in_stock', 'out_of_stock', or 'low_stock'", app_errors.StatusBadRequest)
+			logger.LogError(log, err, "Invalid filter_by_stock value")
+			return nil, err
+		}
+	}
+
+	if filter.FilterByPublish != nil {
+		filterByPublish := *filter.FilterByPublish
+		if filterByPublish == "draft" || filterByPublish == "published" {
+			tx = tx.Where("publish = ?", filterByPublish)
+		} else {
+			err := app_errors.AppError("Must be 'draft' or 'published'", app_errors.StatusBadRequest)
+			logger.LogError(log, err, "Invalid filter_by_publish value")
+			return nil, err
+		}
+	}
 
 	pager := filter.Pager
 
 	err := pager.DoQuery(&result.Records, tx).Error
 	if err != nil {
 		err := app_errors.AppError("Error getting list product", app_errors.StatusNotFound)
-		logger.LogError(log, err, "Error when getting list internal price group")
+		logger.LogError(log, err, "Error when getting list products")
 		return nil, err
-
 	}
 
 	mapper := model.GetProductResponseData{}
@@ -154,6 +198,45 @@ func (r *ProductRepository) GetListProduct(filter *paging.Filter, pgRepo *gorm.D
 	response := &model.ListProductResponse{
 		Filter:  filter,
 		Records: mapperList,
+	}
+
+	return response, nil
+}
+
+// Add this method to your ProductRepository struct in product.go
+
+func (r *ProductRepository) FilterColumnProduct(
+	ctx context.Context,
+	filter *model.ColumnFilterParam,
+	pager *paging.Pager,
+	tx *gorm.DB) (*model.ListProductResponse, error) {
+
+	log := logger.WithTag("ProductRepository|FilterColumnProduct")
+
+	// Start with the base query
+	query := tx.Model(&model.Product{})
+
+	// Apply the column filter
+	query = r.applyColumnFilter(query, filter.Column, filter.Operator, filter.Value, filter.Values)
+
+	// Execute the query with pagination
+	var products []model.Product
+	if err := pager.DoQuery(&products, query).Error; err != nil {
+		err := app_errors.AppError("Error filtering products", app_errors.StatusInternalServerError)
+		logger.LogError(log, err, "Error executing filter query")
+		return nil, err
+	}
+
+	// Map products to response format
+	var origProducts []model.OriginalProduct
+	for _, p := range products {
+		mapper := r.mapProductToResponseData(p)
+		origProducts = append(origProducts, mapper.Product)
+	}
+
+	// Create a response structure
+	response := &model.ListProductResponse{
+		Records: origProducts,
 	}
 
 	return response, nil
@@ -214,6 +297,61 @@ func (r *ProductRepository) mapProductToResponseData(product model.Product) mode
 	responseData.Product.Tags = []string{}
 
 	return responseData
+}
+
+func (r *ProductRepository) applyColumnFilter(tx *gorm.DB, column, operator, value string, values []string) *gorm.DB {
+	if column == "created_at" {
+		switch operator {
+		case "contains":
+			// Extract year from timestamp for "contains" year search
+			return tx.Where("EXTRACT(YEAR FROM created_at)::text LIKE ?", "%"+value+"%")
+		case "does_not_contains":
+			// Exclude timestamps where year contains the value
+			return tx.Where("EXTRACT(YEAR FROM created_at)::text NOT LIKE ?", "%"+value+"%")
+		case "equals":
+			return tx.Where(column+" = ?", value)
+		case "does_not_equals":
+			return tx.Where(column+" != ?", value)
+		case "starts_with":
+			// Handle starts_with for date (e.g., starts with 2023)
+			return tx.Where("TO_CHAR(created_at, 'YYYY-MM-DD') LIKE ?", value+"%")
+		case "ends_with":
+			// Handle ends_with for date (e.g., ends with -31 for last day of month)
+			return tx.Where("TO_CHAR(created_at, 'YYYY-MM-DD') LIKE ?", "%"+value)
+		case "is_empty":
+			return tx.Where(column + " IS NULL")
+		case "is_not_empty":
+			return tx.Where(column + " IS NOT NULL")
+		case "is_any_of":
+			if len(values) > 0 {
+				return tx.Where(column+" IN (?)", values)
+			}
+		}
+	}
+
+	switch operator {
+	case "contains":
+		return tx.Where(column+" ILIKE ?", "%"+value+"%")
+	case "does_not_contains":
+		return tx.Where(column+" NOT ILIKE ?", "%"+value+"%")
+	case "equals":
+		return tx.Where(column+" = ?", value)
+	case "does_not_equals":
+		return tx.Where(column+" != ?", value)
+	case "starts_with":
+		return tx.Where(column+" ILIKE ?", value+"%")
+	case "ends_with":
+		return tx.Where(column+" ILIKE ?", "%"+value)
+	case "is_empty":
+		return tx.Where(column + " = '' OR " + column + " IS NULL")
+	case "is_not_empty":
+		return tx.Where(column + " != '' AND " + column + " IS NOT NULL")
+	case "is_any_of":
+		if len(values) > 0 {
+			return tx.Where(column+" IN (?)", values)
+		}
+	}
+	return tx
 }
 
 func (r *ProductRepository) UpdateProduct(ctx context.Context, tx *gorm.DB, id string, product model.Product) (*model.GetProductResponse, error) {

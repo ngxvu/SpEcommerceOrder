@@ -94,14 +94,39 @@ type GetProductResponse struct {
 	Data GetProductResponseData `json:"data"`
 }
 
+type ProductFilterRequest struct {
+	DefaultSearch   *string `json:"default_search" form:"default_search"`
+	SearchByStock   *string `json:"search_by_stock" form:"search_by_stock"`
+	SearchByPrice   *string `json:"search_by_price" form:"search_by_price"`
+	SearchByYear    *string `json:"search_by_year" form:"search_by_year"`
+	SearchByPublish *string `json:"search_by_publish" form:"search_by_publish"`
+	FilterByStock   *string `json:"filter_by_stock" form:"filter_by_stock"`
+	FilterByPublish *string `json:"filter_by_publish" form:"filter_by_publish"`
+}
+
+type ListProductFilter struct {
+	ProductFilterRequest
+	Pager *paging.Pager
+}
+
 type ListProductResult struct {
-	Filter  *paging.Filter
+	Filter  *ListProductFilter
 	Records []Product `json:"products"`
 }
 
 type ListProductResponse struct {
-	Filter  *paging.Filter
+	Filter  *ListProductFilter
 	Records []OriginalProduct `json:"products"`
+}
+
+// ColumnFilterParam defines a complete filter parameter including column, operator, and values
+type ColumnFilterParam struct {
+	Column   string   `json:"column" binding:"required"`   // Column name to filter on
+	Operator string   `json:"operator" binding:"required"` // Filter operator
+	Value    string   `json:"value"`                       // Single value
+	Values   []string `json:"values"`                      // Multiple values
+	Page     int      `json:"page" binding:"required"`
+	PageSize int      `json:"page_size" binding:"required"`
 }
 
 type UpdateProductRequest struct {

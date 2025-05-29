@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/jinzhu/gorm/dialects/postgres"
 	model "kimistore/internal/models"
 	"kimistore/internal/repo"
@@ -20,7 +21,8 @@ type ProductService struct {
 type ProductServiceInterface interface {
 	CreateProduct(ctx context.Context, productRequest model.CreateProductRequest) (*model.GetProductResponse, error)
 	GetDetailProduct(ctx context.Context, id string) (*model.GetProductResponse, error)
-	GetListProduct(ctx context.Context, filter *paging.Filter) (*model.ListProductResponse, error)
+	GetListProduct(ctx context.Context, filter *model.ListProductFilter) (*model.ListProductResponse, error)
+	ListProductFilterAdvance(ctx context.Context, req *model.ColumnFilterParam) (*model.ListProductResponse, error)
 	UpdateProduct(ctx context.Context, id string, productRequest model.UpdateProductRequest) (*model.GetProductResponse, error)
 	DeleteProduct(ctx context.Context, id string) (*model.DeleteProductResponse, error)
 }
@@ -128,7 +130,8 @@ func (s *ProductService) GetDetailProduct(ctx context.Context, id string) (*mode
 	return product, nil
 }
 
-func (s *ProductService) GetListProduct(ctx context.Context, filter *paging.Filter) (*model.ListProductResponse, error) {
+func (s *ProductService) GetListProduct(ctx context.Context,
+	filter *model.ListProductFilter) (*model.ListProductResponse, error) {
 	log := logger.WithTag("ProductService|GetListProduct")
 
 	tx, cancel := s.newPgRepo.DBWithTimeout(ctx)
@@ -142,6 +145,53 @@ func (s *ProductService) GetListProduct(ctx context.Context, filter *paging.Filt
 		logger.LogError(log, err, "Error getting list of products")
 		return nil, err
 	}
+	return result, nil
+}
+
+func (s *ProductService) ListProductFilterAdvance(ctx context.Context, filter *model.ColumnFilterParam) (*model.ListProductResponse, error) {
+	log := logger.WithTag("ProductService|ListProductFilterAdvance")
+
+	// Validate pagination parameters
+	if filter.Page <= 0 {
+		filter.Page = 1
+	}
+	if filter.PageSize <= 0 {
+		filter.PageSize = 10
+	}
+
+	// Validate operators in filters
+	validOps := s.ValidOperators()
+	validOpsMap := make(map[string]bool)
+	for _, op := range validOps {
+		validOpsMap[op] = true
+	}
+
+	// Validate each filter's operator
+	if !validOpsMap[filter.Operator] {
+		err := app_errors.AppError(fmt.Sprintf("Invalid operator '%s'", filter.Operator), app_errors.StatusValidationError)
+		logger.LogError(log, err, "Invalid filter operator")
+		return nil, err
+	}
+
+	// Create a pager for database pagination
+	pager := &paging.Pager{
+		Page:     filter.Page,
+		PageSize: filter.PageSize,
+	}
+
+	tx, cancel := s.newPgRepo.DBWithTimeout(ctx)
+	defer cancel()
+
+	tx = s.newPgRepo.GetRepo().Begin()
+	defer tx.Rollback()
+
+	result, err := s.repo.FilterColumnProduct(ctx, filter, pager, tx)
+	if err != nil {
+		logger.LogError(log, err, "Error filtering list of products")
+		return nil, err
+	}
+
+	tx.Commit()
 	return result, nil
 }
 
@@ -218,4 +268,13 @@ func (s *ProductService) DeleteProduct(ctx context.Context, id string) (*model.D
 	tx.Commit()
 
 	return response, nil
+}
+
+func (s *ProductService) ValidOperators() []string {
+	return []string{
+		"contains", "not_contains", "equals", "not_equals",
+		"starts_with", "ends_with", "is_empty", "is_not_empty",
+		"is_any_of", "greater_than", "less_than",
+		"greater_than_or_equal", "less_than_or_equal",
+	}
 }

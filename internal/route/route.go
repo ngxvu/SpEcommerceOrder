@@ -77,7 +77,8 @@ func ProductRoutes(router *gin.RouterGroup, handler *handlers.ProductHandler) {
 	{
 		routerProduct.POST("/create", handler.CreateProduct)
 		routerProduct.POST("/detail/:id", handler.GetDetailProduct)
-		routerProduct.POST("/list", handler.GetListProduct)
+		routerProduct.GET("/list", handler.GetListProduct)
+		routerProduct.POST("/filter", handler.ListProductFilterAdvance)
 		routerProduct.PUT("/update/:id", handler.UpdateProduct)
 		routerProduct.DELETE("/delete/:id", handler.DeleteProduct)
 	}
