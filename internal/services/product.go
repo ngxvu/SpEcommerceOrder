@@ -185,7 +185,7 @@ func (s *ProductService) ListProductFilterAdvance(ctx context.Context, filter *m
 	tx = s.newPgRepo.GetRepo().Begin()
 	defer tx.Rollback()
 
-	result, err := s.repo.FilterColumnProduct(ctx, filter, pager, tx)
+	result, err := s.repo.FilterColumnProduct(filter, pager, tx)
 	if err != nil {
 		logger.LogError(log, err, "Error filtering list of products")
 		return nil, err

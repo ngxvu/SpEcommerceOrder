@@ -24,7 +24,7 @@ type ProductRepositoryInterface interface {
 	CreateProduct(ctx context.Context, tx *gorm.DB, product model.Product) (*model.GetProductResponse, error)
 	GetDetailProduct(ctx context.Context, tx *gorm.DB, id string) (*model.GetProductResponse, error)
 	GetListProduct(filter *model.ListProductFilter, tx *gorm.DB) (*model.ListProductResponse, error)
-	FilterColumnProduct(ctx context.Context, filter *model.ColumnFilterParam, pager *paging.Pager, tx *gorm.DB) (*model.ListProductResponse, error)
+	FilterColumnProduct(filter *model.ColumnFilterParam, pager *paging.Pager, tx *gorm.DB) (*model.ListProductResponse, error)
 	UpdateProduct(ctx context.Context, tx *gorm.DB, id string, product model.Product) (*model.GetProductResponse, error)
 	DeleteProduct(ctx context.Context, tx *gorm.DB, id string) (*model.DeleteProductResponse, error)
 }
@@ -206,7 +206,6 @@ func (r *ProductRepository) GetListProduct(filter *model.ListProductFilter, pgRe
 // Add this method to your ProductRepository struct in product.go
 
 func (r *ProductRepository) FilterColumnProduct(
-	ctx context.Context,
 	filter *model.ColumnFilterParam,
 	pager *paging.Pager,
 	tx *gorm.DB) (*model.ListProductResponse, error) {
