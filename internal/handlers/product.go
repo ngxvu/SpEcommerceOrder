@@ -5,8 +5,8 @@ import (
 	model "kimistore/internal/models"
 	pgGorm "kimistore/internal/repo/pg-gorm"
 	"kimistore/internal/services"
+	"kimistore/internal/utils"
 	"kimistore/internal/utils/app_errors"
-	"kimistore/pkg/http/logger"
 	"kimistore/pkg/http/paging"
 	"net/http"
 )
@@ -27,20 +27,32 @@ func NewProductHandler(
 
 func (p *ProductHandler) CreateProduct(ctx *gin.Context) {
 
-	log := logger.WithTag("Backend|ProductHandler|CreateProduct")
+	context := ctx.Request.Context()
 
-	var product model.CreateProductRequest
-	if err := ctx.ShouldBindJSON(&product); err != nil {
-		err = app_errors.AppError("Invalid request", app_errors.StatusValidationError)
-		logger.LogError(log, err, "Failed to bind JSON")
+	var productRequest model.CreateProductRequest
+	if err := ctx.ShouldBindJSON(&productRequest); err != nil {
+		err = app_errors.AppError(app_errors.StatusBadRequest, app_errors.StatusBadRequest)
 		_ = ctx.Error(err)
 		return
 	}
 
-	// Call the service to create the product
-	createdProduct, err := p.productService.CreateProduct(ctx, product)
+	allowedPublishValues := []string{utils.PublishDraft, utils.PublishPublished}
+	if !utils.ContainsString(*productRequest.Publish, allowedPublishValues) {
+		err := app_errors.AppError("Must be 'draft' or 'published'", app_errors.StatusBadRequest)
+		_ = ctx.Error(err)
+		return
+	}
+
+	allowedInventoryTypes := []string{utils.InventoryInStock, utils.InventoryOutOfStock, utils.InventoryLowStock}
+	if !utils.ContainsString(*productRequest.InventoryType, allowedInventoryTypes) {
+		err := app_errors.AppError("Must be 'in stock', 'out of stock', or 'low stock'", app_errors.StatusBadRequest)
+		_ = ctx.Error(err)
+		return
+	}
+
+	// Call the service to create the productRequest
+	createdProduct, err := p.productService.CreateProduct(context, productRequest)
 	if err != nil {
-		logger.LogError(log, err, "Failed to create product")
 		_ = ctx.Error(err)
 		return
 	}
@@ -49,20 +61,12 @@ func (p *ProductHandler) CreateProduct(ctx *gin.Context) {
 
 func (p *ProductHandler) GetDetailProduct(ctx *gin.Context) {
 
-	log := logger.WithTag("Backend|ProductHandler|GetDetailProduct")
+	context := ctx.Request.Context()
 
 	productID := ctx.Param("id")
-	if productID == "" {
-		err := app_errors.AppError("Product ID is required", app_errors.StatusValidationError)
-		logger.LogError(log, err, "Product ID is required")
-		_ = ctx.Error(err)
-		return
-	}
 
-	product, err := p.productService.GetDetailProduct(ctx, productID)
+	product, err := p.productService.GetDetailProduct(context, productID)
 	if err != nil {
-		err = app_errors.AppError("Failed to get product details", app_errors.StatusInternalServerError)
-		logger.LogError(log, err, "Failed to get product details")
 		_ = ctx.Error(err)
 		return
 	}
@@ -72,13 +76,11 @@ func (p *ProductHandler) GetDetailProduct(ctx *gin.Context) {
 
 func (p *ProductHandler) GetListProduct(ctx *gin.Context) {
 
-	log := logger.WithTag("Backend|ProductHandler|GetListProduct")
+	context := ctx.Request.Context()
 
 	var req model.ProductFilterRequest
-
 	if err := ctx.BindQuery(&req); err != nil {
-		err = app_errors.AppError("fail to bind query parameters", app_errors.StatusValidationError)
-		logger.LogError(log, err, "Failed to bind query")
+		err = app_errors.AppError(app_errors.StatusBadRequest, app_errors.StatusBadRequest)
 		_ = ctx.Error(err)
 		return
 	}
@@ -88,7 +90,29 @@ func (p *ProductHandler) GetListProduct(ctx *gin.Context) {
 		Pager:                paging.NewPagerWithGinCtx(ctx),
 	}
 
-	rs, err := p.productService.GetListProduct(ctx, filter)
+	if filter.FilterByStock != nil {
+		filterByStock := *filter.FilterByStock
+
+		allowedInventoryTypes := []string{utils.InventoryInStock, utils.InventoryOutOfStock, utils.InventoryLowStock}
+		if !utils.ContainsString(filterByStock, allowedInventoryTypes) {
+			err := app_errors.AppError("Must be 'in stock', 'out of stock', or 'low stock'", app_errors.StatusBadRequest)
+			_ = ctx.Error(err)
+			return
+		}
+	}
+
+	if filter.FilterByPublish != nil {
+		filterByPublish := *filter.FilterByPublish
+
+		allowedPublishValues := []string{utils.PublishDraft, utils.PublishPublished}
+		if !utils.ContainsString(filterByPublish, allowedPublishValues) {
+			err := app_errors.AppError("Must be 'draft' or 'published'", app_errors.StatusBadRequest)
+			_ = ctx.Error(err)
+			return
+		}
+	}
+
+	rs, err := p.productService.GetListProduct(context, filter)
 	if err != nil {
 		_ = ctx.Error(err)
 		return
@@ -98,20 +122,19 @@ func (p *ProductHandler) GetListProduct(ctx *gin.Context) {
 }
 
 func (p *ProductHandler) ListProductFilterAdvance(ctx *gin.Context) {
-	log := logger.WithTag("Backend|ProductHandler|ListProductFilterAdvance")
+
+	context := ctx.Request.Context()
 
 	var req model.ColumnFilterParam
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		err = app_errors.AppError("Invalid request", app_errors.StatusValidationError)
-		logger.LogError(log, err, "Failed to bind JSON")
+		err = app_errors.AppError(app_errors.StatusBadRequest, app_errors.StatusBadRequest)
 		_ = ctx.Error(err)
 		return
 	}
 
-	rs, err := p.productService.ListProductFilterAdvance(ctx, &req)
+	rs, err := p.productService.ListProductFilterAdvance(context, &req)
 	if err != nil {
-		logger.LogError(log, err, "Failed to filter products")
 		_ = ctx.Error(err)
 		return
 	}
@@ -128,29 +151,20 @@ func (p *ProductHandler) ListProductFilterAdvance(ctx *gin.Context) {
 
 func (p *ProductHandler) UpdateProduct(ctx *gin.Context) {
 
-	log := logger.WithTag("Backend|ProductHandler|UpdateProduct")
+	context := ctx.Request.Context()
 
 	productID := ctx.Param("id")
-	if productID == "" {
-		err := app_errors.AppError("Product ID is required", app_errors.StatusValidationError)
-		logger.LogError(log, err, "Product ID is required")
-		_ = ctx.Error(err)
-		return
-	}
 
 	var updateProductRequest model.UpdateProductRequest
 	if err := ctx.ShouldBindJSON(&updateProductRequest); err != nil {
-		err = app_errors.AppError("Invalid request", app_errors.StatusValidationError)
-		logger.LogError(log, err, "Failed to bind JSON")
+		err = app_errors.AppError(app_errors.StatusBadRequest, app_errors.StatusBadRequest)
 		_ = ctx.Error(err)
 		return
 	}
 
 	// Call the service to update the product
-	updatedProduct, err := p.productService.UpdateProduct(ctx, productID, updateProductRequest)
+	updatedProduct, err := p.productService.UpdateProduct(context, productID, updateProductRequest)
 	if err != nil {
-		err = app_errors.AppError("Failed to update product", app_errors.StatusInternalServerError)
-		logger.LogError(log, err, "Failed to update product")
 		_ = ctx.Error(err)
 		return
 	}
@@ -160,20 +174,12 @@ func (p *ProductHandler) UpdateProduct(ctx *gin.Context) {
 
 func (p *ProductHandler) DeleteProduct(ctx *gin.Context) {
 
-	log := logger.WithTag("Backend|ProductHandler|DeleteProduct")
+	context := ctx.Request.Context()
 
 	productID := ctx.Param("id")
-	if productID == "" {
-		err := app_errors.AppError("Product ID is required", app_errors.StatusValidationError)
-		logger.LogError(log, err, "Product ID is required")
-		_ = ctx.Error(err)
-		return
-	}
 
-	response, err := p.productService.DeleteProduct(ctx, productID)
+	response, err := p.productService.DeleteProduct(context, productID)
 	if err != nil {
-		err = app_errors.AppError("Failed to delete product", app_errors.StatusInternalServerError)
-		logger.LogError(log, err, "Failed to delete product")
 		_ = ctx.Error(err)
 		return
 	}
