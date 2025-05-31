@@ -24,7 +24,9 @@ func ApplicationV1Router(
 		MigrateRoutes(routerV1, handlers.NewMigrationHandler(newPgRepo))
 
 		// Auth for User
-		AuthUserRoutes(routerV1, handlers.NewAuthUserHandler(newPgRepo))
+		authUserRepo := repo.NewAuthUserRepository()
+		authUserService := services.NewAuthUserService(authUserRepo, newPgRepo)
+		AuthorizationUserRoutes(routerV1, handlers.NewAuthUserHandler(newPgRepo, authUserService))
 
 		// Media
 		mediaRepo := repo.NewMediaRepository()
@@ -56,7 +58,7 @@ func MigrateRoutes(router *gin.RouterGroup, handler *handlers.MigrationHandler) 
 	}
 }
 
-func AuthUserRoutes(router *gin.RouterGroup, handler *handlers.AuthUserHandler) {
+func AuthorizationUserRoutes(router *gin.RouterGroup, handler *handlers.AuthUserHandler) {
 	routerAuth := router.Group("/auth")
 	{
 		routerAuth.POST("/login", handler.Login)
