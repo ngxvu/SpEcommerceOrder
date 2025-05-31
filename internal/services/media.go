@@ -2,13 +2,17 @@ package services
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
-	"io"
+	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
+	"image"
 	model "kimistore/internal/models"
 	"kimistore/internal/repo"
 	pgGorm "kimistore/internal/repo/pg-gorm"
-	"os"
+	"kimistore/internal/utils/app_errors"
+	"kimistore/pkg/http/logger"
+	"kimistore/pkg/http/service/s3_storage"
+	"mime/multipart"
+	"sync"
 )
 
 type MediaService struct {
@@ -17,9 +21,7 @@ type MediaService struct {
 }
 
 type MediaServiceInterface interface {
-	SaveMedia(ctx context.Context, media model.Media) (*model.ImageSaveResponse, error)
-	IsDuplicate(ctx context.Context, hash string) (bool, error)
-	GenerateFileHash(filePath string) (string, error)
+	ProcessAndUploadImages(ctx *gin.Context, files []*multipart.FileHeader) ([]*model.MediaInformationResponse, error)
 }
 
 func NewMediaService(repo repo.MediaRepositoryInterface, newRepo pgGorm.PGInterface) *MediaService {
@@ -29,45 +31,165 @@ func NewMediaService(repo repo.MediaRepositoryInterface, newRepo pgGorm.PGInterf
 	}
 }
 
-func (s *MediaService) GenerateFileHash(filePath string) (string, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return "", err
-	}
-	defer file.Close()
+// processAndUploadImages processes and uploads images to S3 and saves to database
+func (s *MediaService) ProcessAndUploadImages(ctx *gin.Context, files []*multipart.FileHeader) ([]*model.MediaInformationResponse, error) {
 
-	hash := sha256.New()
-	if _, err := io.Copy(hash, file); err != nil {
-		return "", err
+	getContext := ctx.Request.Context()
+
+	log := logger.WithTag("MediaService|ProcessAndUploadImages")
+
+	var wg sync.WaitGroup
+	resultChan := make(chan *model.MediaInformationResponse, len(files))
+	errorChan := make(chan error, len(files))
+
+	for _, file := range files {
+		wg.Add(1)
+		go func(file *multipart.FileHeader) {
+			defer wg.Done()
+
+			// Process single image
+			result, err := s.processSingleImage(getContext, file)
+			if err != nil {
+				errorChan <- err
+				return
+			}
+			resultChan <- result
+		}(file)
 	}
 
-	return hex.EncodeToString(hash.Sum(nil)), nil
+	wg.Wait()
+	close(resultChan)
+	close(errorChan)
+
+	// Handle any errors from upload phase
+	if len(errorChan) > 0 {
+		for err := range errorChan {
+			logger.LogError(log, err, "Error processing images")
+			_ = ctx.Error(err)
+			return nil, err
+		}
+	}
+
+	// Collect successful uploads
+	var mediaList []*model.MediaInformationResponse
+	for res := range resultChan {
+		mediaList = append(mediaList, res)
+	}
+
+	return mediaList, nil
 }
 
-func (s *MediaService) SaveMedia(ctx context.Context, media model.Media) (*model.ImageSaveResponse, error) {
+// processSingleImage processes a single image file
+func (s *MediaService) processSingleImage(ctx context.Context, file *multipart.FileHeader) (*model.MediaInformationResponse, error) {
 
-	tx := s.newPgRepo.GetRepo().Begin()
-	defer tx.Rollback()
+	log := logger.WithTag("MediaService|ProcessSingleImage")
+
+	fileSizeBytes := file.Size
+	fileSizeMB := float64(fileSizeBytes) / (1024 * 1024)
+
+	// Extract image metadata
+	img, format, err := s.extractImageMetadata(file)
+	if err != nil {
+		return nil, err
+	}
+
+	// Upload to S3
+	url, err := s.uploadToS3(file, log)
+	if err != nil {
+		return nil, err
+	}
+
+	media := model.Media{
+		MediaURL:    *url,
+		MediaFormat: *format,
+		MediaSize:   fileSizeMB,
+		MediaWidth:  img.Width,
+		MediaHeight: img.Height,
+	}
+
+	saveMedia, err := s.saveMedia(ctx, media)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create and save media record
+	return &saveMedia.Data, nil
+}
+
+func (s *MediaService) saveMedia(ctx context.Context, media model.Media) (*model.ImageSaveResponse, error) {
+
+	log := logger.WithTag("MediaService|SaveMedia")
 
 	tx, cancel := s.newPgRepo.DBWithTimeout(ctx)
 	defer cancel()
 
-	saveMedia, err := s.repo.SaveMedia(media, tx, ctx)
+	tx = s.newPgRepo.GetRepo().Begin()
+	defer tx.Rollback()
+
+	savedMedia, err := s.repo.SaveMedia(media, tx, ctx)
 	if err != nil {
+		logger.LogError(log, err, "Failed to save media")
+		err = app_errors.AppError("Failed to save images", app_errors.StatusInternalServerError)
 		return nil, err
 	}
 
 	tx.Commit()
 
-	return saveMedia, nil
+	return savedMedia, nil
 }
 
-func (s *MediaService) IsDuplicate(ctx context.Context, hash string) (bool, error) {
+// extractImageMetadata extracts width, height and format from image
+func (s *MediaService) extractImageMetadata(file *multipart.FileHeader) (*image.Config, *string, error) {
 
-	tx := s.newPgRepo.GetRepo().Begin()
-	defer tx.Rollback()
+	log := logger.WithTag("MediaService|ExtractImageMetadata")
 
-	tx, cancel := s.newPgRepo.DBWithTimeout(ctx)
-	defer cancel()
-	return s.repo.IsDuplicate(hash, tx)
+	imgFile, err := file.Open()
+	if err != nil {
+		logger.LogError(log, err, "Failed to open image file")
+		err = app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
+		return nil, nil, err
+	}
+	defer imgFile.Close()
+
+	// Read image configuration (dimensions, format)
+	img, format, err := image.DecodeConfig(imgFile)
+	if err != nil {
+		logger.LogError(log, err, "Failed to decode image configuration")
+		err = app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
+		return nil, nil, err
+	}
+
+	return &img, &format, nil
+}
+
+// uploadToS3 uploads file to S3 storage
+func (s *MediaService) uploadToS3(file *multipart.FileHeader, log *logrus.Entry) (*string, error) {
+
+	log = logger.WithTag("MediaService|UploadToS3")
+
+	imgFile, err := file.Open()
+	if err != nil {
+		logger.LogError(log, err, "Failed to open image file for upload")
+		err = app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
+		return nil, err
+	}
+	defer imgFile.Close()
+
+	// Create S3 uploader
+	uploader, err := s3_storage.NewS3Uploader()
+	if err != nil {
+		logger.LogError(log, err, "Failed to create S3 uploader")
+		err = app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
+		return nil, err
+	}
+
+	// Upload file to S3
+	url, err := uploader.UploadFile(imgFile, file)
+	if err != nil {
+		logger.LogError(log, err, "Failed to upload image")
+		err = app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
+		return nil, err
+	}
+
+	return &url, nil
 }

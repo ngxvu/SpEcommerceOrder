@@ -10,7 +10,6 @@ type Media struct {
 	MediaSize   float64 `json:"media_size" gorm:"type:decimal(10,2);not null"`               // size of media
 	MediaWidth  int     `json:"media_width" gorm:"type:int;not null"`                        // width of media
 	MediaHeight int     `json:"media_height" gorm:"type:int;not null"`                       // height of media
-	MediaHash   string  `json:"media_hash" gorm:"type:varchar(64);default:null"`
 }
 
 func (Media) TableName() string {
