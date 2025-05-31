@@ -75,7 +75,7 @@ type OriginalProduct struct {
 type CreateProductRequest struct {
 	CoverURL       *string   `json:"cover_url" binding:"required"`
 	Images         []*string `json:"images" binding:"required"`
-	Publish        *string   `json:"publish"`
+	Publish        *string   `json:"publish" binding:"required"`
 	Name           *string   `json:"name" binding:"required"`
 	Price          *float64  `json:"price" binding:"required"`
 	Quantity       *int      `json:"quantity" binding:"required"`

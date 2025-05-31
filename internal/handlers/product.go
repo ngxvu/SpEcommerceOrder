@@ -9,6 +9,7 @@ import (
 	"kimistore/internal/utils/app_errors"
 	"kimistore/pkg/http/paging"
 	"net/http"
+	"strings"
 )
 
 type ProductHandler struct {
@@ -133,6 +134,16 @@ func (p *ProductHandler) ListProductFilterAdvance(ctx *gin.Context) {
 		return
 	}
 
+	// Validate operators in filters
+	validOps := utils.ValidOperatorsMap()
+
+	// Validate each filter's operator
+	if !validOps[req.Operator] {
+		err := app_errors.AppError("Operator must be one of: "+strings.Join(utils.ValidOperators(), ","), app_errors.StatusBadRequest)
+		_ = ctx.Error(err)
+		return
+	}
+
 	rs, err := p.productService.ListProductFilterAdvance(context, &req)
 	if err != nil {
 		_ = ctx.Error(err)
@@ -160,6 +171,24 @@ func (p *ProductHandler) UpdateProduct(ctx *gin.Context) {
 		err = app_errors.AppError(app_errors.StatusBadRequest, app_errors.StatusBadRequest)
 		_ = ctx.Error(err)
 		return
+	}
+
+	if updateProductRequest.Publish != nil {
+		allowedPublishValues := []string{utils.PublishDraft, utils.PublishPublished}
+		if !utils.ContainsString(*updateProductRequest.Publish, allowedPublishValues) {
+			err := app_errors.AppError("Must be 'draft' or 'published'", app_errors.StatusBadRequest)
+			_ = ctx.Error(err)
+			return
+		}
+	}
+
+	if updateProductRequest.InventoryType != nil {
+		allowedInventoryTypes := []string{utils.InventoryInStock, utils.InventoryOutOfStock, utils.InventoryLowStock}
+		if !utils.ContainsString(*updateProductRequest.InventoryType, allowedInventoryTypes) {
+			err := app_errors.AppError("Must be 'in stock', 'out of stock', or 'low stock'", app_errors.StatusBadRequest)
+			_ = ctx.Error(err)
+			return
+		}
 	}
 
 	// Call the service to update the product

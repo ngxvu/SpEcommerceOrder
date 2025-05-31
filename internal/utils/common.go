@@ -106,3 +106,12 @@ func ValidOperators() []string {
 		"greater_than_or_equal", "less_than_or_equal",
 	}
 }
+
+func ValidOperatorsMap() map[string]bool {
+	validOperators := ValidOperators()
+	operatorsMap := make(map[string]bool, len(validOperators))
+	for _, operator := range validOperators {
+		operatorsMap[operator] = true
+	}
+	return operatorsMap
+}
