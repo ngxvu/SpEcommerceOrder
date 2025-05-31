@@ -15,6 +15,10 @@ type Post struct {
 	Description string `json:"description" gorm:"type:text;column:description"`
 }
 
+func (Post) TableName() string {
+	return "posts"
+}
+
 type OriginalPost struct {
 	ID       string `json:"id"`
 	Publish  string `json:"publish"`
@@ -62,7 +66,7 @@ type OriginalPost struct {
 
 type CreatePostRequest struct {
 	Title       *string `json:"title" binding:"required"`
-	Publish     *string `json:"publish"`
+	Publish     *string `json:"publish" binding:"required"`
 	Content     *string `json:"content" binding:"required"`
 	CoverURL    *string `json:"cover_url" binding:"required"`
 	Description *string `json:"description" binding:"required"`

@@ -5,8 +5,6 @@ import (
 	"gorm.io/gorm"
 	model "kimistore/internal/models"
 	"kimistore/internal/utils"
-	"kimistore/internal/utils/app_errors"
-	"kimistore/pkg/http/logger"
 	"time"
 )
 
@@ -18,30 +16,35 @@ func NewPostRepository() *PostRepository {
 }
 
 type PostRepositoryInterface interface {
-	CreatePost(ctx context.Context, tx *gorm.DB, postRequest model.CreatePostRequest) (*model.GetPostResponse, error)
+	CreatePost(ctx context.Context, tx *gorm.DB, post model.Post) (*model.GetPostResponse, error)
+	CheckPostExistById(tx *gorm.DB, id string) (bool, error)
+	PostExistsByName(tx *gorm.DB, name string) (bool, error)
 	GetDetailPost(ctx context.Context, tx *gorm.DB, id string) (*model.GetPostResponse, error)
 	GetListPost(filter *model.ListPostFilter, pgRepo *gorm.DB) (*model.ListPostResponse, error)
-	UpdatePost(ctx context.Context, tx *gorm.DB, id string, postRequest model.UpdatePostRequest) (*model.GetPostResponse, error)
+	UpdatePost(ctx context.Context, tx *gorm.DB, post model.Post) (*model.GetPostResponse, error)
 	DeletePost(ctx context.Context, tx *gorm.DB, id string) (*model.DeletePostResponse, error)
 }
 
-func (p *PostRepository) CreatePost(ctx context.Context, tx *gorm.DB, postRequest model.CreatePostRequest) (*model.GetPostResponse, error) {
-
-	log := logger.WithTag("PostRepository|CreatePost")
-
-	// Create a new post object
-	post := model.Post{
-		Title:       *postRequest.Title,
-		Description: *postRequest.Description,
-		Content:     *postRequest.Content,
-		CoverURL:    *postRequest.CoverURL,
-		Publish:     *postRequest.Publish,
+func (p *PostRepository) CheckPostExistById(tx *gorm.DB, id string) (bool, error) {
+	var count int64
+	if err := tx.Model(&model.Post{}).Where("id = ?", id).Count(&count).Error; err != nil {
+		return false, err
 	}
+	return count > 0, nil
+}
+
+func (p *PostRepository) PostExistsByName(tx *gorm.DB, title string) (bool, error) {
+	var count int64
+	if err := tx.Model(&model.Post{}).Where("title = ?", title).Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+func (p *PostRepository) CreatePost(ctx context.Context, tx *gorm.DB, post model.Post) (*model.GetPostResponse, error) {
 
 	// Save the post to the database
 	if err := tx.Create(&post).Error; err != nil {
-		logger.LogError(log, err, "Failed to create post")
-		err := app_errors.AppError("Failed to create post", app_errors.StatusInternalServerError)
 		return nil, err
 	}
 
@@ -110,12 +113,9 @@ func (p *PostRepository) mapperPostsToResponse(post model.Post) model.GetPostRes
 }
 
 func (p *PostRepository) GetDetailPost(ctx context.Context, tx *gorm.DB, id string) (*model.GetPostResponse, error) {
-	log := logger.WithTag("PostRepository|GetDetailPost")
 
 	var post model.Post
 	if err := tx.Where("id = ?", id).First(&post).Error; err != nil {
-		logger.LogError(log, err, "Failed to get post by ID")
-		err := app_errors.AppError("Failed to get post", app_errors.StatusNotFound)
 		return nil, err
 	}
 
@@ -129,9 +129,7 @@ func (p *PostRepository) GetDetailPost(ctx context.Context, tx *gorm.DB, id stri
 	return response, nil
 }
 
-func (r *PostRepository) GetListPost(filter *model.ListPostFilter, pgRepo *gorm.DB) (*model.ListPostResponse, error) {
-
-	log := logger.WithTag("PostRepository|GetListPost")
+func (p *PostRepository) GetListPost(filter *model.ListPostFilter, pgRepo *gorm.DB) (*model.ListPostResponse, error) {
 
 	tx := pgRepo.Model(&model.Post{})
 
@@ -150,8 +148,6 @@ func (r *PostRepository) GetListPost(filter *model.ListPostFilter, pgRepo *gorm.
 
 	err := pager.DoQuery(&result.Records, tx).Error
 	if err != nil {
-		err := app_errors.AppError("Error getting list Post", app_errors.StatusNotFound)
-		logger.LogError(log, err, "Error when getting list internal price group")
 		return nil, err
 
 	}
@@ -161,7 +157,7 @@ func (r *PostRepository) GetListPost(filter *model.ListPostFilter, pgRepo *gorm.
 	var mapperList []model.OriginalPost
 
 	for i := 0; i < len(result.Records); i++ {
-		mapper = r.mapperPostsToResponse(result.Records[i])
+		mapper = p.mapperPostsToResponse(result.Records[i])
 		mapperList = append(mapperList, mapper.Post)
 	}
 
@@ -173,32 +169,14 @@ func (r *PostRepository) GetListPost(filter *model.ListPostFilter, pgRepo *gorm.
 	return response, nil
 }
 
-func (r *PostRepository) UpdatePost(ctx context.Context, tx *gorm.DB, id string, postRequest model.UpdatePostRequest) (*model.GetPostResponse, error) {
-	log := logger.WithTag("PostRepository|UpdatePost")
-
-	// Find the post by ID
-	var post model.Post
-	if err := tx.Where("id = ?", id).First(&post).Error; err != nil {
-		logger.LogError(log, err, "Failed to find post by ID")
-		err := app_errors.AppError("Failed to find post", app_errors.StatusNotFound)
-		return nil, err
-	}
-
-	// Update the post fields
-	post.Title = *postRequest.Title
-	post.Description = *postRequest.Description
-	post.Content = *postRequest.Content
-	post.CoverURL = *postRequest.CoverURL
-	post.Publish = *postRequest.Publish
+func (p *PostRepository) UpdatePost(ctx context.Context, tx *gorm.DB, post model.Post) (*model.GetPostResponse, error) {
 
 	// Save the updated post to the database
 	if err := tx.Save(&post).Error; err != nil {
-		logger.LogError(log, err, "Failed to update post")
-		err := app_errors.AppError("Failed to update post", app_errors.StatusInternalServerError)
 		return nil, err
 	}
 
-	responseData := r.mapperPostsToResponse(post)
+	responseData := p.mapperPostsToResponse(post)
 
 	response := &model.GetPostResponse{
 		Meta: utils.NewMetaData(ctx),
@@ -208,22 +186,15 @@ func (r *PostRepository) UpdatePost(ctx context.Context, tx *gorm.DB, id string,
 	return response, nil
 }
 
-func (r *PostRepository) DeletePost(ctx context.Context, tx *gorm.DB, id string) (*model.DeletePostResponse, error) {
+func (p *PostRepository) DeletePost(ctx context.Context, tx *gorm.DB, id string) (*model.DeletePostResponse, error) {
 
-	log := logger.WithTag("PostRepository|DeletePost")
-
-	// Find the post by ID
 	var post model.Post
 	if err := tx.Where("id = ?", id).First(&post).Error; err != nil {
-		logger.LogError(log, err, "Failed to find post by ID")
-		err = app_errors.AppError("Failed to find post", app_errors.StatusNotFound)
 		return nil, err
 	}
 
 	// Delete the post from the database
 	if err := tx.Delete(&post).Error; err != nil {
-		logger.LogError(log, err, "Failed to delete post")
-		err = app_errors.AppError("Failed to delete post", app_errors.StatusInternalServerError)
 		return nil, err
 	}
 

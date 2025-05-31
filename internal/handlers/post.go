@@ -5,8 +5,8 @@ import (
 	model "kimistore/internal/models"
 	pgGorm "kimistore/internal/repo/pg-gorm"
 	"kimistore/internal/services"
+	"kimistore/internal/utils"
 	"kimistore/internal/utils/app_errors"
-	"kimistore/pkg/http/logger"
 	"kimistore/pkg/http/paging"
 	"net/http"
 )
@@ -27,21 +27,26 @@ func NewPostHandler(
 
 func (p *PostHandler) CreatePost(ctx *gin.Context) {
 
-	log := logger.WithTag("Backend|PostHandler|CreatePost")
+	context := ctx.Request.Context()
 
-	var post model.CreatePostRequest
+	var postRequest model.CreatePostRequest
 
-	if err := ctx.ShouldBindJSON(&post); err != nil {
-		err = app_errors.AppError("Invalid request", app_errors.StatusValidationError)
-		logger.LogError(log, err, "Failed to bind JSON")
+	if err := ctx.ShouldBindJSON(&postRequest); err != nil {
+		err = app_errors.AppError(app_errors.StatusBadRequest, app_errors.StatusBadRequest)
+		_ = ctx.Error(err)
+		return
+	}
+
+	allowedPublishValues := []string{utils.PublishDraft, utils.PublishPublished}
+	if !utils.ContainsString(*postRequest.Publish, allowedPublishValues) {
+		err := app_errors.AppError("Must be 'draft' or 'published'", app_errors.StatusBadRequest)
 		_ = ctx.Error(err)
 		return
 	}
 
 	// Call the service to create the product
-	createdPost, err := p.postService.CreatePost(ctx, post)
+	createdPost, err := p.postService.CreatePost(context, postRequest)
 	if err != nil {
-		logger.LogError(log, err, "Failed to create post")
 		_ = ctx.Error(err)
 		return
 	}
@@ -50,20 +55,14 @@ func (p *PostHandler) CreatePost(ctx *gin.Context) {
 }
 
 func (p *PostHandler) GetDetailPost(ctx *gin.Context) {
-	log := logger.WithTag("Backend|PostHandler|GetDetailPost")
+
+	context := ctx.Request.Context()
 
 	postID := ctx.Param("id")
-	if postID == "" {
-		err := app_errors.AppError("Post ID is required", app_errors.StatusValidationError)
-		logger.LogError(log, err, "Post ID is required")
-		_ = ctx.Error(err)
-		return
-	}
 
 	// Call the service to get the post details
-	post, err := p.postService.GetDetailPost(ctx, postID)
+	post, err := p.postService.GetDetailPost(context, postID)
 	if err != nil {
-		logger.LogError(log, err, "Failed to get post details")
 		_ = ctx.Error(err)
 		return
 	}
@@ -72,16 +71,27 @@ func (p *PostHandler) GetDetailPost(ctx *gin.Context) {
 }
 
 func (p *PostHandler) GetListPost(ctx *gin.Context) {
-	log := logger.WithTag("Backend|PostHandler|GetListPost")
+
+	context := ctx.Request.Context()
 
 	var req model.PostFilterRequest
 
 	err := ctx.BindQuery(&req)
 	if err != nil {
-		err = app_errors.AppError("fail to get pagination", app_errors.StatusValidationError)
-		logger.LogError(log, err, "Failed to bind query")
+		err = app_errors.AppError(app_errors.StatusBadRequest, app_errors.StatusBadRequest)
 		_ = ctx.Error(err)
 		return
+	}
+
+	if req.Publish != nil {
+		filterByPublish := *req.Publish
+
+		allowedPublishValues := []string{utils.PublishDraft, utils.PublishPublished}
+		if !utils.ContainsString(filterByPublish, allowedPublishValues) {
+			err := app_errors.AppError("Must be 'draft' or 'published'", app_errors.StatusBadRequest)
+			_ = ctx.Error(err)
+			return
+		}
 	}
 
 	filter := &model.ListPostFilter{
@@ -89,7 +99,7 @@ func (p *PostHandler) GetListPost(ctx *gin.Context) {
 		Pager:             paging.NewPagerWithGinCtx(ctx),
 	}
 
-	rs, err := p.postService.GetListPost(ctx, filter)
+	rs, err := p.postService.GetListPost(context, filter)
 	if err != nil {
 		_ = ctx.Error(err)
 		return
@@ -99,28 +109,21 @@ func (p *PostHandler) GetListPost(ctx *gin.Context) {
 }
 
 func (p *PostHandler) UpdatePost(ctx *gin.Context) {
-	log := logger.WithTag("Backend|PostHandler|UpdatePost")
+
+	context := ctx.Request.Context()
 
 	postID := ctx.Param("id")
-	if postID == "" {
-		err := app_errors.AppError("Post ID is required", app_errors.StatusValidationError)
-		logger.LogError(log, err, "Post ID is required")
-		_ = ctx.Error(err)
-		return
-	}
 
 	var postRequest model.UpdatePostRequest
 
 	if err := ctx.ShouldBindJSON(&postRequest); err != nil {
-		err = app_errors.AppError("Invalid request", app_errors.StatusValidationError)
-		logger.LogError(log, err, "Failed to bind JSON")
+		err = app_errors.AppError(app_errors.StatusBadRequest, app_errors.StatusBadRequest)
 		_ = ctx.Error(err)
 		return
 	}
 
-	post, err := p.postService.UpdatePost(ctx, postID, postRequest)
+	post, err := p.postService.UpdatePost(context, postID, postRequest)
 	if err != nil {
-		logger.LogError(log, err, "Failed to update post")
 		_ = ctx.Error(err)
 		return
 	}
@@ -129,19 +132,13 @@ func (p *PostHandler) UpdatePost(ctx *gin.Context) {
 }
 
 func (p *PostHandler) DeletePost(ctx *gin.Context) {
-	log := logger.WithTag("Backend|PostHandler|DeletePost")
+
+	context := ctx.Request.Context()
 
 	postID := ctx.Param("id")
-	if postID == "" {
-		err := app_errors.AppError("Post ID is required", app_errors.StatusValidationError)
-		logger.LogError(log, err, "Post ID is required")
-		_ = ctx.Error(err)
-		return
-	}
 
-	response, err := p.postService.DeletePost(ctx, postID)
+	response, err := p.postService.DeletePost(context, postID)
 	if err != nil {
-		logger.LogError(log, err, "Failed to delete post")
 		_ = ctx.Error(err)
 		return
 	}
