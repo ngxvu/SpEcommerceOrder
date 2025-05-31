@@ -5,38 +5,58 @@ import (
 	"encoding/json"
 	"gorm.io/gorm"
 	model "kimistore/internal/models"
+	pgGorm "kimistore/internal/repo/pg-gorm"
 	"kimistore/internal/utils"
 	"kimistore/pkg/http/paging"
 	"time"
 )
 
 type ProductRepository struct {
+	db pgGorm.PGInterface
 }
 
-func NewProductRepository() *ProductRepository {
-	return &ProductRepository{}
+func NewProductRepository(newPgRepo pgGorm.PGInterface) *ProductRepository {
+	return &ProductRepository{
+		db: newPgRepo,
+	}
 }
 
 type ProductRepositoryInterface interface {
-	ProductExistsByName(tx *gorm.DB, name string) (bool, error)
-	ProductExistsByID(tx *gorm.DB, id string) (bool, error)
+	ProductExistsByName(ctx context.Context, tx *gorm.DB, name string) (bool, error)
+	ProductExistsByID(ctx context.Context, tx *gorm.DB, id string) (bool, error)
 	CreateProduct(ctx context.Context, tx *gorm.DB, product model.Product) (*model.GetProductResponse, error)
 	GetDetailProduct(ctx context.Context, tx *gorm.DB, id string) (*model.GetProductResponse, error)
-	GetListProduct(filter *model.ListProductFilter, tx *gorm.DB) (*model.ListProductResponse, error)
-	FilterColumnProduct(filter *model.ColumnFilterParam, pager *paging.Pager, tx *gorm.DB) (*model.ListProductResponse, error)
+	GetListProduct(ctx context.Context, filter *model.ListProductFilter, tx *gorm.DB) (*model.ListProductResponse, error)
+	FilterColumnProduct(ctx context.Context, filter *model.ColumnFilterParam, pager *paging.Pager, tx *gorm.DB) (*model.ListProductResponse, error)
 	UpdateProduct(ctx context.Context, tx *gorm.DB, id string, product model.Product) (*model.GetProductResponse, error)
 	DeleteProduct(ctx context.Context, tx *gorm.DB, id string) (*model.DeleteProductResponse, error)
 }
 
-func (r *ProductRepository) ProductExistsByName(tx *gorm.DB, name string) (bool, error) {
+// ProductExistsByName checks if a product exists by its name.
+func (r *ProductRepository) ProductExistsByName(ctx context.Context, tx *gorm.DB, name string) (bool, error) {
+	// Use the provided transaction or create a new one with timeout
+	var cancel context.CancelFunc
+	if tx == nil {
+		tx, cancel = r.db.DBWithTimeout(ctx)
+		defer cancel()
+	}
+
 	var count int64
-	if err := tx.Model(&model.Product{}).Where("name = ?", name).Count(&count).Error; err != nil {
+	if err := tx.Model(&model.Product{}).Where("name ILIKE ?", name).Count(&count).Error; err != nil {
 		return false, err
 	}
 	return count > 0, nil
 }
 
-func (r *ProductRepository) ProductExistsByID(tx *gorm.DB, id string) (bool, error) {
+// ProductExistsByID checks if a product exists by its ID.
+func (r *ProductRepository) ProductExistsByID(ctx context.Context, tx *gorm.DB, id string) (bool, error) {
+
+	var cancel context.CancelFunc
+	if tx == nil {
+		tx, cancel = r.db.DBWithTimeout(ctx)
+		defer cancel()
+	}
+
 	var count int64
 	if err := tx.Model(&model.Product{}).Where("id = ?", id).Count(&count).Error; err != nil {
 		return false, err
@@ -44,7 +64,15 @@ func (r *ProductRepository) ProductExistsByID(tx *gorm.DB, id string) (bool, err
 	return count > 0, nil
 }
 
+// CreateProduct creates a new product in the database.
 func (r *ProductRepository) CreateProduct(ctx context.Context, tx *gorm.DB, product model.Product) (*model.GetProductResponse, error) {
+
+	var cancel context.CancelFunc
+	if tx == nil {
+		tx, cancel = r.db.DBWithTimeout(ctx)
+		defer cancel()
+	}
+
 	// Prepare JSON data
 	imagesJSON, err := json.Marshal(product.Images)
 	if err != nil {
@@ -67,7 +95,7 @@ func (r *ProductRepository) CreateProduct(ctx context.Context, tx *gorm.DB, prod
 
 	// Execute query and get product ID
 	var productID string
-	err = tx.Raw(rawSQL,
+	err = tx.WithContext(ctx).Raw(rawSQL,
 		product.CoverURL,
 		string(imagesJSON),
 		product.Publish,
@@ -98,6 +126,12 @@ func (r *ProductRepository) CreateProduct(ctx context.Context, tx *gorm.DB, prod
 
 func (r *ProductRepository) GetDetailProduct(ctx context.Context, tx *gorm.DB, id string) (*model.GetProductResponse, error) {
 
+	var cancel context.CancelFunc
+	if tx == nil {
+		tx, cancel = r.db.DBWithTimeout(ctx)
+		defer cancel()
+	}
+
 	var product model.Product
 	if err := tx.Where("id = ?", id).First(&product).Error; err != nil {
 		return nil, err
@@ -111,11 +145,17 @@ func (r *ProductRepository) GetDetailProduct(ctx context.Context, tx *gorm.DB, i
 	}, nil
 }
 
-func (r *ProductRepository) GetListProduct(filter *model.ListProductFilter, pgRepo *gorm.DB) (*model.ListProductResponse, error) {
+func (r *ProductRepository) GetListProduct(ctx context.Context, filter *model.ListProductFilter, tx *gorm.DB) (*model.ListProductResponse, error) {
+
+	var cancel context.CancelFunc
+	if tx == nil {
+		tx, cancel = r.db.DBWithTimeout(ctx)
+		defer cancel()
+	}
 
 	product := model.Product{}
 
-	tx := pgRepo.Model(&product)
+	query := tx.Model(&product)
 
 	result := &model.ListProductResult{
 		Filter:  filter,
@@ -124,42 +164,42 @@ func (r *ProductRepository) GetListProduct(filter *model.ListProductFilter, pgRe
 
 	if filter.DefaultSearch != nil {
 		searchTerm := "%" + *filter.DefaultSearch + "%"
-		tx = tx.Where("name ILIKE ?", searchTerm)
+		query = query.Where("name ILIKE ?", searchTerm)
 	}
 
 	if filter.SearchByStock != nil {
 		searchStock := "%" + *filter.SearchByStock + "%"
-		tx = tx.Where("inventory_type ILIKE ?", searchStock)
+		query = query.Where("inventory_type ILIKE ?", searchStock)
 	}
 
 	if filter.SearchByPrice != nil {
 		searchPrice := *filter.SearchByPrice
-		tx = tx.Where("price::text LIKE ?", "%"+searchPrice+"%")
+		query = query.Where("price::text LIKE ?", "%"+searchPrice+"%")
 	}
 
 	if filter.SearchByPublish != nil {
 		searchPublish := *filter.SearchByPublish
-		tx = tx.Where("publish LIKE ?", "%"+searchPublish+"%")
+		query = query.Where("publish LIKE ?", "%"+searchPublish+"%")
 	}
 
 	if filter.SearchByYear != nil {
 		searchYear := *filter.SearchByYear
-		tx = tx.Where("EXTRACT(YEAR FROM created_at) = ?", searchYear)
+		query = query.Where("EXTRACT(YEAR FROM created_at) = ?", searchYear)
 	}
 
 	if filter.FilterByStock != nil {
 		filterByStock := *filter.FilterByStock
-		tx = tx.Where("inventory_type = ?", filterByStock)
+		query = query.Where("inventory_type = ?", filterByStock)
 	}
 
 	if filter.FilterByPublish != nil {
 		filterByPublish := *filter.FilterByPublish
-		tx = tx.Where("publish = ?", filterByPublish)
+		query = query.Where("publish = ?", filterByPublish)
 	}
 
 	pager := filter.Pager
 
-	err := pager.DoQuery(&result.Records, tx).Error
+	err := pager.DoQuery(&result.Records, query).Error
 	if err != nil {
 		return nil, err
 	}
@@ -181,10 +221,16 @@ func (r *ProductRepository) GetListProduct(filter *model.ListProductFilter, pgRe
 	return response, nil
 }
 
-func (r *ProductRepository) FilterColumnProduct(
+func (r *ProductRepository) FilterColumnProduct(ctx context.Context,
 	filter *model.ColumnFilterParam,
 	pager *paging.Pager,
 	tx *gorm.DB) (*model.ListProductResponse, error) {
+
+	var cancel context.CancelFunc
+	if tx == nil {
+		tx, cancel = r.db.DBWithTimeout(ctx)
+		defer cancel()
+	}
 
 	// Start with the base query
 	query := tx.Model(&model.Product{})
@@ -330,22 +376,30 @@ func (r *ProductRepository) applyColumnFilter(tx *gorm.DB, column, operator, val
 
 func (r *ProductRepository) UpdateProduct(ctx context.Context, tx *gorm.DB, id string, product model.Product) (*model.GetProductResponse, error) {
 
+	var cancel context.CancelFunc
+	if tx == nil {
+		tx, cancel = r.db.DBWithTimeout(ctx)
+		defer cancel()
+	}
+
 	// Update the product in the database using raw SQL
 	rawSQL := `
     UPDATE "products"
-    SET cover_url = ?, images = ?, publish = ?, name = ?, price = ?, sizes = ?, sub_description = ?, description = ?
+    SET cover_url = ?, images = ?, publish = ?, name = ?, price = ?, quantity = ?, inventory_type = ?, sizes = ?, sub_description = ?, description = ?
     WHERE id = ?
 `
 
 	imagesJSON, _ := json.Marshal(product.Images)
 	sizesJSON, _ := json.Marshal(product.Sizes)
 
-	if err := tx.Exec(rawSQL,
+	if err := tx.WithContext(ctx).Exec(rawSQL,
 		product.CoverURL,
 		string(imagesJSON),
 		product.Publish,
 		product.Name,
 		product.Price,
+		product.Quantity,
+		product.InventoryType,
 		string(sizesJSON),
 		product.SubDescription,
 		product.Description,
@@ -367,13 +421,19 @@ func (r *ProductRepository) UpdateProduct(ctx context.Context, tx *gorm.DB, id s
 
 func (r *ProductRepository) DeleteProduct(ctx context.Context, tx *gorm.DB, id string) (*model.DeleteProductResponse, error) {
 
+	var cancel context.CancelFunc
+	if tx == nil {
+		tx, cancel = r.db.DBWithTimeout(ctx)
+		defer cancel()
+	}
+
 	// Delete the product from the database using raw SQL
 	rawSQL := `
 	DELETE FROM "products"
 	WHERE id = ?
 `
 
-	if err := tx.Exec(rawSQL, id).Error; err != nil {
+	if err := tx.WithContext(ctx).Exec(rawSQL, id).Error; err != nil {
 		return nil, err
 	}
 

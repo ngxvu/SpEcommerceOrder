@@ -34,7 +34,7 @@ func ApplicationV1Router(
 		MediaRoutes(routerV1, handlers.NewMediaHandler(newPgRepo, mediaService))
 
 		// Product
-		productRepo := repo.NewProductRepository()
+		productRepo := repo.NewProductRepository(newPgRepo)
 		productService := services.NewProductService(productRepo, newPgRepo)
 		ProductRoutes(routerV1, handlers.NewProductHandler(newPgRepo, productService))
 

@@ -40,11 +40,8 @@ func (s *ProductService) CreateProduct(ctx context.Context, productRequest model
 	tx := s.newPgRepo.GetRepo().Begin()
 	defer tx.Rollback()
 
-	tx, cancel := s.newPgRepo.DBWithTimeout(ctx)
-	defer cancel()
-
 	// Check if the productRequest already exists
-	existingProduct, err := s.repo.ProductExistsByName(tx, *productRequest.Name)
+	existingProduct, err := s.repo.ProductExistsByName(ctx, tx, *productRequest.Name)
 	if err != nil {
 		logger.LogError(log, err, "Error checking if productRequest exists")
 		return nil, err
@@ -57,11 +54,15 @@ func (s *ProductService) CreateProduct(ctx context.Context, productRequest model
 
 	images, err := s.transferImagesToJsonB(productRequest.Images)
 	if err != nil {
+		logger.LogError(log, err, "Error transferring images to JsonB")
+		err = app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
 		return nil, err
 	}
 
 	sizes, err := s.transferSizesToJsonB(productRequest.Sizes)
 	if err != nil {
+		logger.LogError(log, err, "Error transferring sizes to JsonB")
+		err = app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
 		return nil, err
 	}
 
@@ -93,7 +94,8 @@ func (s *ProductService) CreateProduct(ctx context.Context, productRequest model
 	// Create the productRequest in the database
 	newProduct, err := s.repo.CreateProduct(ctx, tx, product)
 	if err != nil {
-		logger.LogError(log, err, "Error creating productRequest")
+		logger.LogError(log, err, "Error creating product")
+		err = app_errors.AppError("Error creating product", app_errors.StatusInternalServerError)
 		return nil, err
 	}
 
@@ -124,10 +126,7 @@ func toJsonb(data interface{}) (*postgres.Jsonb, error) {
 }
 
 func (s *ProductService) GetDetailProduct(ctx context.Context, id string) (*model.GetProductResponse, error) {
-	log := logger.WithTag("ProductService|GetProductByID")
-
-	tx := s.newPgRepo.GetRepo().Begin()
-	defer tx.Rollback()
+	log := logger.WithTag("ProductService|GetDetailProduct")
 
 	tx, cancel := s.newPgRepo.DBWithTimeout(ctx)
 	defer cancel()
@@ -135,9 +134,9 @@ func (s *ProductService) GetDetailProduct(ctx context.Context, id string) (*mode
 	product, err := s.repo.GetDetailProduct(ctx, tx, id)
 	if err != nil {
 		logger.LogError(log, err, "Error getting product by ID")
+		err = app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
 		return nil, err
 	}
-
 	return product, nil
 }
 
@@ -148,12 +147,10 @@ func (s *ProductService) GetListProduct(ctx context.Context,
 	tx, cancel := s.newPgRepo.DBWithTimeout(ctx)
 	defer cancel()
 
-	tx = s.newPgRepo.GetRepo().Begin()
-	defer tx.Rollback()
-
-	result, err := s.repo.GetListProduct(filter, tx)
+	result, err := s.repo.GetListProduct(ctx, filter, tx)
 	if err != nil {
 		logger.LogError(log, err, "Error getting list of products")
+		err = app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
 		return nil, err
 	}
 	return result, nil
@@ -179,16 +176,13 @@ func (s *ProductService) ListProductFilterAdvance(ctx context.Context, filter *m
 	tx, cancel := s.newPgRepo.DBWithTimeout(ctx)
 	defer cancel()
 
-	tx = s.newPgRepo.GetRepo().Begin()
-	defer tx.Rollback()
-
-	result, err := s.repo.FilterColumnProduct(filter, pager, tx)
+	result, err := s.repo.FilterColumnProduct(ctx, filter, pager, tx)
 	if err != nil {
 		logger.LogError(log, err, "Error filtering list of products")
+		err = app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
 		return nil, err
 	}
 
-	tx.Commit()
 	return result, nil
 }
 
@@ -198,50 +192,52 @@ func (s *ProductService) UpdateProduct(ctx context.Context, id string, productRe
 	tx := s.newPgRepo.GetRepo().Begin()
 	defer tx.Rollback()
 
-	tx, cancel := s.newPgRepo.DBWithTimeout(ctx)
-	defer cancel()
-
-	exist, err := s.repo.ProductExistsByID(tx, id)
+	// Check if product exists
+	exist, err := s.repo.ProductExistsByID(ctx, tx, id)
 	if err != nil {
 		logger.LogError(log, err, "Error checking if product exists by ID")
-		err := app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
-		return nil, err
+		return nil, app_errors.AppError("Error checking product existence", app_errors.StatusInternalServerError)
 	}
 
 	if !exist {
 		logger.LogError(log, nil, "Product not found")
-		err = app_errors.AppError("Product not found", app_errors.StatusNotFound)
-		return nil, err
+		return nil, app_errors.AppError("Product not found", app_errors.StatusNotFound)
 	}
 
 	// Check if the productRequest already exists
 	if productRequest.Name != nil {
-		existingProduct, err := s.repo.ProductExistsByName(tx, *productRequest.Name)
+		existingProduct, err := s.repo.ProductExistsByName(ctx, tx, *productRequest.Name)
 		if err != nil {
 			logger.LogError(log, err, "Error checking if productRequest exists")
-			err := app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
+			err = app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
 			return nil, err
 		}
 		if existingProduct {
 			logger.LogError(log, err, "Product already exists")
-			err := app_errors.AppError("Product already exists", app_errors.StatusConflict)
+			err = app_errors.AppError("Product already exists", app_errors.StatusConflict)
 			return nil, err
 		}
 	}
 
 	currentProduct, err := s.repo.GetDetailProduct(ctx, tx, id)
 	if err != nil {
+		logger.LogError(log, err, "Error getting current product details")
+		err = app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
 		return nil, err
 	}
 	orig := currentProduct.Data.Product
 
-	images, err := s.processStringForUpdate(productRequest.Images, orig.Images)
+	images, err := s.processStringArrayForUpdate(productRequest.Images, orig.Images)
 	if err != nil {
+		logger.LogError(log, err, "Error processing images for update")
+		err = app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
 		return nil, err
 	}
 
-	sizes, err := s.processStringForUpdate(productRequest.Sizes, orig.Sizes)
+	sizes, err := s.processStringArrayForUpdate(productRequest.Sizes, orig.Sizes)
 	if err != nil {
+		logger.LogError(log, err, "Error processing sizes for update")
+		err = app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
 		return nil, err
 	}
 
@@ -264,12 +260,10 @@ func (s *ProductService) DeleteProduct(ctx context.Context, id string) (*model.D
 	tx := s.newPgRepo.GetRepo().Begin()
 	defer tx.Rollback()
 
-	tx, cancel := s.newPgRepo.DBWithTimeout(ctx)
-	defer cancel()
-
 	response, err := s.repo.DeleteProduct(ctx, tx, id)
 	if err != nil {
 		logger.LogError(log, err, "Error deleting product")
+		err = app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
 		return nil, err
 	}
 
@@ -339,7 +333,7 @@ func (s *ProductService) selectOriginForNilValue(
 }
 
 // processImagesForUpdate processes the images for update, using requested images if provided or original otherwise
-func (s *ProductService) processStringForUpdate(req []*string, orig []string) (*postgres.Jsonb, error) {
+func (s *ProductService) processStringArrayForUpdate(req []*string, orig []string) (*postgres.Jsonb, error) {
 	if req != nil {
 		return s.transferImagesToJsonB(req)
 	}
