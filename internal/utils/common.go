@@ -3,10 +3,12 @@ package utils
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"github.com/astaxie/beego/validation"
 	"github.com/ericlagergren/decimal"
 	"github.com/google/uuid"
+	"github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/volatiletech/sqlboiler/v4/types"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -62,4 +64,45 @@ func HashPassword(password string) (string, error) {
 
 func UUIDtoString(uuid uuid.UUID) string {
 	return uuid.String()
+}
+
+func ContainsString(value string, allowedValues []string) bool {
+	for _, allowed := range allowedValues {
+		if value == allowed {
+			return true
+		}
+	}
+	return false
+}
+
+func TransferDataToJsonB(data []*string) (*postgres.Jsonb, error) {
+
+	jsonb, err := toJsonb(data)
+	if err != nil {
+
+		return nil, err
+	}
+
+	return jsonb, nil
+}
+
+func toJsonb(data interface{}) (*postgres.Jsonb, error) {
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+	var jsonbData postgres.Jsonb
+	if err := jsonbData.UnmarshalJSON(jsonData); err != nil {
+		return nil, err
+	}
+	return &jsonbData, nil
+}
+
+func ValidOperators() []string {
+	return []string{
+		"contains", "not_contains", "equals", "not_equals",
+		"starts_with", "ends_with", "is_empty", "is_not_empty",
+		"is_any_of", "greater_than", "less_than",
+		"greater_than_or_equal", "less_than_or_equal",
+	}
 }
