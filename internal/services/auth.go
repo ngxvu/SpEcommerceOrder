@@ -1,0 +1,137 @@
+package services
+
+import (
+	"context"
+	"github.com/sirupsen/logrus"
+	model "kimistore/internal/models"
+	"kimistore/internal/repo"
+	pgGorm "kimistore/internal/repo/pg-gorm"
+	"kimistore/internal/utils"
+	"kimistore/internal/utils/app_errors"
+	"kimistore/internal/utils/sync_ob"
+	"kimistore/pkg/http/logger"
+	"kimistore/pkg/http/service/jwt_user"
+)
+
+type AuthUserService struct {
+	repo      repo.AuthUserRepoInterface
+	newPgRepo pgGorm.PGInterface
+}
+
+type AuthUserServiceInterface interface {
+	Login(request model.UserLoginRequest, ctx context.Context) (*jwt_user.JWTUserDataResponse, error)
+	Register(request model.UserRegisterRequest, ctx context.Context) (*jwt_user.JWTUserDataResponse, error)
+}
+
+func NewAuthUserService(repo repo.AuthUserRepoInterface, newRepo pgGorm.PGInterface) *AuthUserService {
+	return &AuthUserService{
+		repo:      repo,
+		newPgRepo: newRepo,
+	}
+}
+
+func (s *AuthUserService) Login(request model.UserLoginRequest, ctx context.Context) (*jwt_user.JWTUserDataResponse, error) {
+	log := logger.WithTag("AuthUserService|Login")
+
+	tx, cancel := s.newPgRepo.DBWithTimeout(ctx)
+	defer cancel()
+
+	getUser, err := s.repo.GetUser(map[string]interface{}{"email": request.Email}, tx)
+	if err != nil {
+		logger.LogError(log, err, "fail to get user by email")
+		err = app_errors.AppError(app_errors.StatusUnauthorized, app_errors.StatusUnauthorized)
+		return nil, err
+	}
+
+	isAuthenticated := utils.CheckPasswordHash(request.Password, getUser.Password)
+	if !isAuthenticated {
+		logger.LogError(log, nil, "password does not match")
+		err = app_errors.AppError(app_errors.StatusUnauthorized, app_errors.StatusUnauthorized)
+		return nil, err
+	}
+
+	response, err := s.generateTokensAndCreateResponse(ctx, getUser, log)
+	if err != nil {
+		logger.LogError(log, err, "fail to generate tokens and create response")
+		err = app_errors.AppError(app_errors.StatusUnauthorized, app_errors.StatusUnauthorized)
+		return nil, err
+	}
+
+	return response, nil
+}
+
+func (s *AuthUserService) Register(request model.UserRegisterRequest, ctx context.Context) (*jwt_user.JWTUserDataResponse, error) {
+	log := logger.WithTag("AuthUserService|Register")
+
+	tx, cancel := s.newPgRepo.DBWithTimeout(ctx)
+	defer cancel()
+
+	tx = s.newPgRepo.GetRepo().Begin()
+	defer tx.Rollback()
+
+	existingUser, err := s.repo.GetUser(map[string]interface{}{"email": request.Email}, tx)
+	if existingUser != nil {
+		logger.LogError(log, err, "email already exists")
+		err := app_errors.AppError(app_errors.StatusUnauthorized, app_errors.StatusUnauthorized)
+		return nil, err
+	}
+
+	hashedPassword, err := utils.HashPassword(*request.Password)
+	if err != nil {
+		logger.LogError(log, err, "failed to hash password")
+		err := app_errors.AppError(app_errors.StatusUnauthorized, app_errors.StatusUnauthorized)
+		return nil, err
+	}
+
+	ob := model.User{}
+
+	sync_ob.Sync(request, &ob)
+	ob.Password = hashedPassword
+
+	getUser, err := s.repo.Register(&ob, tx)
+	if err != nil {
+		logger.LogError(log, err, "failed to register user")
+		err = app_errors.AppError(app_errors.StatusUnauthorized, app_errors.StatusUnauthorized)
+		return nil, err
+	}
+
+	tx.Commit()
+
+	response, err := s.generateTokensAndCreateResponse(ctx, getUser, log)
+	if err != nil {
+		logger.LogError(log, err, "failed to generate tokens and create response")
+		err = app_errors.AppError(app_errors.StatusUnauthorized, app_errors.StatusUnauthorized)
+		return nil, err
+	}
+
+	return response, nil
+}
+
+func (s *AuthUserService) generateTokensAndCreateResponse(ctx context.Context, user *model.User, log *logrus.Entry) (*jwt_user.JWTUserDataResponse, error) {
+
+	accessTokenClaims, err := jwt_user.GenerateJWTTokenUser(ctx, user.Role, "access")
+	if err != nil {
+		logger.LogError(log, err, "fail to generate access token")
+		return nil, app_errors.AppError(app_errors.StatusUnauthorized, app_errors.StatusUnauthorized)
+	}
+
+	refreshTokenClaims, err := jwt_user.GenerateJWTTokenUser(ctx, user.Role, "refresh")
+	if err != nil {
+		logger.LogError(log, err, "fail to generate refresh token")
+		return nil, app_errors.AppError(app_errors.StatusUnauthorized, app_errors.StatusUnauthorized)
+	}
+
+	securityAuthenticatedUser := jwt_user.SecAuthUserMapper(user, accessTokenClaims, refreshTokenClaims)
+	if securityAuthenticatedUser == nil {
+		err = app_errors.AppError(app_errors.StatusUnauthorized, app_errors.StatusUnauthorized)
+		logger.LogError(log, err, "fail to map security authenticated user")
+		return nil, err
+	}
+
+	response := jwt_user.JWTUserDataResponse{
+		Meta: utils.NewMetaData(ctx),
+		Data: *securityAuthenticatedUser,
+	}
+
+	return &response, nil
+}
