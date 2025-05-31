@@ -19,8 +19,8 @@ type AuthUserService struct {
 }
 
 type AuthUserServiceInterface interface {
-	Login(request model.UserLoginRequest, ctx context.Context) (*jwt_user.JWTUserDataResponse, error)
-	Register(request model.UserRegisterRequest, ctx context.Context) (*jwt_user.JWTUserDataResponse, error)
+	Login(ctx context.Context, request model.UserLoginRequest) (*jwt_user.JWTUserDataResponse, error)
+	Register(ctx context.Context, request model.UserRegisterRequest) (*jwt_user.JWTUserDataResponse, error)
 }
 
 func NewAuthUserService(repo repo.AuthUserRepoInterface, newRepo pgGorm.PGInterface) *AuthUserService {
@@ -30,16 +30,16 @@ func NewAuthUserService(repo repo.AuthUserRepoInterface, newRepo pgGorm.PGInterf
 	}
 }
 
-func (s *AuthUserService) Login(request model.UserLoginRequest, ctx context.Context) (*jwt_user.JWTUserDataResponse, error) {
+func (s *AuthUserService) Login(ctx context.Context, request model.UserLoginRequest) (*jwt_user.JWTUserDataResponse, error) {
 	log := logger.WithTag("AuthUserService|Login")
 
 	tx, cancel := s.newPgRepo.DBWithTimeout(ctx)
 	defer cancel()
 
-	getUser, err := s.repo.GetUser(map[string]interface{}{"email": request.Email}, tx)
+	getUser, err := s.repo.GetUser(ctx, map[string]interface{}{"email": request.Email}, tx)
 	if err != nil {
 		logger.LogError(log, err, "fail to get user by email")
-		err = app_errors.AppError(app_errors.StatusUnauthorized, app_errors.StatusUnauthorized)
+		err = app_errors.AppError(app_errors.StatusNotFound, app_errors.StatusNotFound)
 		return nil, err
 	}
 
@@ -60,19 +60,22 @@ func (s *AuthUserService) Login(request model.UserLoginRequest, ctx context.Cont
 	return response, nil
 }
 
-func (s *AuthUserService) Register(request model.UserRegisterRequest, ctx context.Context) (*jwt_user.JWTUserDataResponse, error) {
+func (s *AuthUserService) Register(ctx context.Context, request model.UserRegisterRequest) (*jwt_user.JWTUserDataResponse, error) {
 	log := logger.WithTag("AuthUserService|Register")
 
-	tx, cancel := s.newPgRepo.DBWithTimeout(ctx)
-	defer cancel()
-
-	tx = s.newPgRepo.GetRepo().Begin()
+	tx := s.newPgRepo.GetRepo().Begin()
 	defer tx.Rollback()
 
-	existingUser, err := s.repo.GetUser(map[string]interface{}{"email": request.Email}, tx)
+	existingUser, err := s.repo.GetUser(ctx, map[string]interface{}{"email": request.Email}, tx)
+	if err != nil {
+		logger.LogError(log, err, "failed to get user by email")
+		err = app_errors.AppError(app_errors.StatusUnauthorized, app_errors.StatusUnauthorized)
+		return nil, err
+	}
+
 	if existingUser != nil {
-		logger.LogError(log, err, "email already exists")
-		err := app_errors.AppError(app_errors.StatusUnauthorized, app_errors.StatusUnauthorized)
+		logger.LogError(log, nil, "user already exists with this email")
+		err = app_errors.AppError(app_errors.StatusConflict, app_errors.StatusConflict)
 		return nil, err
 	}
 
@@ -88,7 +91,7 @@ func (s *AuthUserService) Register(request model.UserRegisterRequest, ctx contex
 	sync_ob.Sync(request, &ob)
 	ob.Password = hashedPassword
 
-	getUser, err := s.repo.Register(&ob, tx)
+	getUser, err := s.repo.Register(ctx, &ob, tx)
 	if err != nil {
 		logger.LogError(log, err, "failed to register user")
 		err = app_errors.AppError(app_errors.StatusUnauthorized, app_errors.StatusUnauthorized)

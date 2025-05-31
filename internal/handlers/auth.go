@@ -31,7 +31,9 @@ func (a *AuthUserHandler) Login(ctx *gin.Context) {
 		return
 	}
 
-	response, err := a.authUserService.Login(request, ctx.Request.Context())
+	context := ctx.Request.Context()
+
+	response, err := a.authUserService.Login(context, request)
 	if err != nil {
 		_ = ctx.Error(err)
 		return
@@ -50,8 +52,9 @@ func (a *AuthUserHandler) Register(ctx *gin.Context) {
 		_ = ctx.Error(err)
 		return
 	}
+	context := ctx.Request.Context()
 
-	register, err := a.authUserService.Register(request, ctx.Request.Context())
+	register, err := a.authUserService.Register(context, request)
 	if err != nil {
 		_ = ctx.Error(err)
 		return

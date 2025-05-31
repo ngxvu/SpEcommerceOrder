@@ -24,7 +24,7 @@ func ApplicationV1Router(
 		MigrateRoutes(routerV1, handlers.NewMigrationHandler(newPgRepo))
 
 		// Auth for User
-		authUserRepo := repo.NewAuthUserRepository()
+		authUserRepo := repo.NewAuthUserRepository(newPgRepo)
 		authUserService := services.NewAuthUserService(authUserRepo, newPgRepo)
 		AuthorizationUserRoutes(routerV1, handlers.NewAuthUserHandler(newPgRepo, authUserService))
 
