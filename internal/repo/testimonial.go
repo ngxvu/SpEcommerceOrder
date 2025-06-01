@@ -4,34 +4,53 @@ import (
 	"context"
 	"gorm.io/gorm"
 	model "kimistore/internal/models"
+	pgGorm "kimistore/internal/repo/pg-gorm"
 	"kimistore/internal/utils"
-	"kimistore/internal/utils/app_errors"
-	"kimistore/pkg/http/logger"
 	"kimistore/pkg/http/paging"
 )
 
 type TestimonialRepository struct {
+	db pgGorm.PGInterface
 }
 
-func NewTestimonialRepository() *TestimonialRepository {
-	return &TestimonialRepository{}
+func NewTestimonialRepository(newPgRepo pgGorm.PGInterface) *TestimonialRepository {
+	return &TestimonialRepository{db: newPgRepo}
 }
 
 type TestimonialRepositoryInterface interface {
+	CheckTestimonialExists(ctx context.Context, tx *gorm.DB, id string) (bool, error)
 	CreateTestimonial(ctx context.Context, tx *gorm.DB, testimonial model.Testimonial) (*model.GetTestimonialResponse, error)
 	GetDetailTestimonial(ctx context.Context, tx *gorm.DB, id string) (*model.GetTestimonialResponse, error)
-	GetListTestimonial(filter *paging.Filter, tx *gorm.DB) (*model.ListTestimonialResponse, error)
-	UpdateTestimonial(ctx context.Context, tx *gorm.DB, id string, Testimonial model.Testimonial) (*model.GetTestimonialResponse, error)
-	DeleteTestimonial(ctx context.Context, tx *gorm.DB, id string) (*model.DeleteTestimonialResponse, error)
+	GetListTestimonial(ctx context.Context, filter *paging.Filter, tx *gorm.DB) (*model.ListTestimonialResponse, error)
+	UpdateTestimonial(ctx context.Context, tx *gorm.DB, id string, testimonialUpdate model.Testimonial) (*model.GetTestimonialResponse, error)
+	DeleteTestimonial(ctx context.Context, tx *gorm.DB, testimonial *model.Testimonial) (*model.DeleteTestimonialResponse, error)
+}
+
+func (r *TestimonialRepository) CheckTestimonialExists(ctx context.Context, tx *gorm.DB, id string) (bool, error) {
+	var cancel context.CancelFunc
+	if tx == nil {
+		tx, cancel = r.db.DBWithTimeout(ctx)
+		defer cancel()
+	}
+
+	var count int64
+	if err := tx.WithContext(ctx).Model(&model.Testimonial{}).Where("id = ?", id).Count(&count).Error; err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
 }
 
 func (r *TestimonialRepository) CreateTestimonial(ctx context.Context,
 	tx *gorm.DB, testimonial model.Testimonial) (*model.GetTestimonialResponse, error) {
-	log := logger.WithTag("TestimonialRepository|CreateTestimonial")
 
-	if err := tx.Create(&testimonial).Error; err != nil {
-		err = app_errors.AppError("Failed to create testimonial", app_errors.StatusInternalServerError)
-		logger.LogError(log, err, "Failed to create testimonial")
+	var cancel context.CancelFunc
+	if tx == nil {
+		tx, cancel = r.db.DBWithTimeout(ctx)
+		defer cancel()
+	}
+
+	if err := tx.WithContext(ctx).Create(&testimonial).Error; err != nil {
 		return nil, err
 	}
 
@@ -45,12 +64,15 @@ func (r *TestimonialRepository) CreateTestimonial(ctx context.Context,
 
 func (r *TestimonialRepository) GetDetailTestimonial(ctx context.Context,
 	tx *gorm.DB, id string) (*model.GetTestimonialResponse, error) {
-	log := logger.WithTag("TestimonialRepository|GetDetailTestimonial")
+
+	var cancel context.CancelFunc
+	if tx == nil {
+		tx, cancel = r.db.DBWithTimeout(ctx)
+		defer cancel()
+	}
 
 	var testimonial model.Testimonial
 	if err := tx.Where("id = ?", id).First(&testimonial).Error; err != nil {
-		err = app_errors.AppError("Testimonial not found", app_errors.StatusNotFound)
-		logger.LogError(log, err, "Testimonial not found")
 		return nil, err
 	}
 
@@ -62,10 +84,15 @@ func (r *TestimonialRepository) GetDetailTestimonial(ctx context.Context,
 	return response, nil
 }
 
-func (r *TestimonialRepository) GetListTestimonial(filter *paging.Filter, pgRepo *gorm.DB) (*model.ListTestimonialResponse, error) {
-	log := logger.WithTag("TestimonialRepository|GetListTestimonial")
+func (r *TestimonialRepository) GetListTestimonial(ctx context.Context, filter *paging.Filter, tx *gorm.DB) (*model.ListTestimonialResponse, error) {
 
-	tx := pgRepo.Model(&model.Testimonial{})
+	var cancel context.CancelFunc
+	if tx == nil {
+		tx, cancel = r.db.DBWithTimeout(ctx)
+		defer cancel()
+	}
+
+	query := tx.Model(&model.Testimonial{})
 
 	result := &model.ListTestimonialResponse{
 		Filter:  filter,
@@ -76,12 +103,9 @@ func (r *TestimonialRepository) GetListTestimonial(filter *paging.Filter, pgRepo
 
 	pager := filter.Pager
 
-	err := pager.DoQuery(&result.Records, tx).Error
+	err := pager.DoQuery(&result.Records, query).Error
 	if err != nil {
-		err := app_errors.AppError("Error getting list testimonial", app_errors.StatusNotFound)
-		logger.LogError(log, err, "Error when getting list internal price group")
 		return nil, err
-
 	}
 
 	response := &model.ListTestimonialResponse{
@@ -92,12 +116,14 @@ func (r *TestimonialRepository) GetListTestimonial(filter *paging.Filter, pgRepo
 	return response, nil
 }
 
-func (r *TestimonialRepository) UpdateTestimonial(ctx context.Context, tx *gorm.DB, id string, testimonial model.Testimonial) (*model.GetTestimonialResponse, error) {
-	log := logger.WithTag("TestimonialRepository|UpdateTestimonial")
+func (r *TestimonialRepository) UpdateTestimonial(ctx context.Context, tx *gorm.DB, id string, testimonialUpdate model.Testimonial) (*model.GetTestimonialResponse, error) {
+	var cancel context.CancelFunc
+	if tx == nil {
+		tx, cancel = r.db.DBWithTimeout(ctx)
+		defer cancel()
+	}
 
-	if err := tx.Model(&model.Testimonial{}).Where("id = ?", id).Updates(testimonial).Error; err != nil {
-		err = app_errors.AppError("Failed to update testimonial", app_errors.StatusInternalServerError)
-		logger.LogError(log, err, "Failed to update testimonial")
+	if err := tx.Model(&model.Testimonial{}).WithContext(ctx).Where("id = ?", id).Updates(testimonialUpdate).Error; err != nil {
 		return nil, err
 	}
 
@@ -109,12 +135,15 @@ func (r *TestimonialRepository) UpdateTestimonial(ctx context.Context, tx *gorm.
 	return detailTestimonial, nil
 }
 
-func (r *TestimonialRepository) DeleteTestimonial(ctx context.Context, tx *gorm.DB, id string) (*model.DeleteTestimonialResponse, error) {
-	log := logger.WithTag("TestimonialRepository|DeleteTestimonial")
+func (r *TestimonialRepository) DeleteTestimonial(ctx context.Context, tx *gorm.DB, testimonial *model.Testimonial) (*model.DeleteTestimonialResponse, error) {
 
-	if err := tx.Where("id = ?", id).Delete(&model.Testimonial{}).Error; err != nil {
-		err = app_errors.AppError("Failed to delete testimonial", app_errors.StatusInternalServerError)
-		logger.LogError(log, err, "Failed to delete testimonial")
+	var cancel context.CancelFunc
+	if tx == nil {
+		tx, cancel = r.db.DBWithTimeout(ctx)
+		defer cancel()
+	}
+
+	if err := tx.WithContext(ctx).Delete(testimonial).Error; err != nil {
 		return nil, err
 	}
 

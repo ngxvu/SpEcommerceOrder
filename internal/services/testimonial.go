@@ -5,6 +5,7 @@ import (
 	model "kimistore/internal/models"
 	"kimistore/internal/repo"
 	pgGorm "kimistore/internal/repo/pg-gorm"
+	"kimistore/internal/utils/app_errors"
 	"kimistore/internal/utils/sync_ob"
 	"kimistore/pkg/http/logger"
 	"kimistore/pkg/http/paging"
@@ -35,10 +36,7 @@ func (s *TestimonialService) CreateTestimonial(ctx context.Context,
 
 	log := logger.WithTag("TestimonialService|CreateTestimonial")
 
-	tx, cancel := s.newPgRepo.DBWithTimeout(ctx)
-	defer cancel()
-
-	tx = s.newPgRepo.GetRepo().Begin()
+	tx := s.newPgRepo.GetRepo().Begin()
 	defer tx.Rollback()
 
 	ob := model.Testimonial{}
@@ -48,6 +46,7 @@ func (s *TestimonialService) CreateTestimonial(ctx context.Context,
 	testimonial, err := s.repo.CreateTestimonial(ctx, tx, ob)
 	if err != nil {
 		logger.LogError(log, err, "failed to create testimonial")
+		err = app_errors.AppError("Fail to create testimonial", app_errors.StatusInternalServerError)
 		return nil, err
 	}
 
@@ -63,16 +62,24 @@ func (s *TestimonialService) GetDetailTestimonial(ctx context.Context, id string
 	tx, cancel := s.newPgRepo.DBWithTimeout(ctx)
 	defer cancel()
 
-	tx = s.newPgRepo.GetRepo().Begin()
-	defer tx.Rollback()
+	exists, err := s.repo.CheckTestimonialExists(ctx, tx, id)
+	if err != nil {
+		logger.LogError(log, err, "failed to check testimonial existence")
+		err = app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
+		return nil, err
+	}
+	if !exists {
+		logger.LogError(log, nil, "testimonial not found")
+		err = app_errors.AppError("Testimonial not found", app_errors.StatusNotFound)
+		return nil, err
+	}
 
 	testimonial, err := s.repo.GetDetailTestimonial(ctx, tx, id)
 	if err != nil {
 		logger.LogError(log, err, "failed to get testimonial detail")
+		err = app_errors.AppError("Fail to get testimonial detail", app_errors.StatusInternalServerError)
 		return nil, err
 	}
-
-	tx.Commit()
 
 	return testimonial, nil
 }
@@ -87,9 +94,10 @@ func (s *TestimonialService) GetListTestimonial(ctx context.Context, filter *pag
 	tx = s.newPgRepo.GetRepo().Begin()
 	defer tx.Rollback()
 
-	testimonials, err := s.repo.GetListTestimonial(filter, tx)
+	testimonials, err := s.repo.GetListTestimonial(ctx, filter, tx)
 	if err != nil {
 		logger.LogError(log, err, "failed to get list testimonial")
+		err = app_errors.AppError("Fail to get list testimonial", app_errors.StatusInternalServerError)
 		return nil, err
 	}
 
@@ -99,11 +107,20 @@ func (s *TestimonialService) GetListTestimonial(ctx context.Context, filter *pag
 func (s *TestimonialService) UpdateTestimonial(ctx context.Context, id string, req model.TestimonialRequest) (*model.GetTestimonialResponse, error) {
 	log := logger.WithTag("TestimonialService|UpdateTestimonial")
 
-	tx, cancel := s.newPgRepo.DBWithTimeout(ctx)
-	defer cancel()
-
-	tx = s.newPgRepo.GetRepo().Begin()
+	tx := s.newPgRepo.GetRepo().Begin()
 	defer tx.Rollback()
+
+	exists, err := s.repo.CheckTestimonialExists(ctx, tx, id)
+	if err != nil {
+		logger.LogError(log, err, "failed to check testimonial existence")
+		err = app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
+		return nil, err
+	}
+	if !exists {
+		logger.LogError(log, nil, "testimonial not found")
+		err = app_errors.AppError("Testimonial not found", app_errors.StatusNotFound)
+		return nil, err
+	}
 
 	ob := model.Testimonial{}
 
@@ -112,6 +129,7 @@ func (s *TestimonialService) UpdateTestimonial(ctx context.Context, id string, r
 	testimonial, err := s.repo.UpdateTestimonial(ctx, tx, id, ob)
 	if err != nil {
 		logger.LogError(log, err, "failed to update testimonial")
+		err = app_errors.AppError("Fail to update testimonial", app_errors.StatusInternalServerError)
 		return nil, err
 	}
 
@@ -123,15 +141,32 @@ func (s *TestimonialService) UpdateTestimonial(ctx context.Context, id string, r
 func (s *TestimonialService) DeleteTestimonial(ctx context.Context, id string) (*model.DeleteTestimonialResponse, error) {
 	log := logger.WithTag("TestimonialService|DeleteTestimonial")
 
-	tx, cancel := s.newPgRepo.DBWithTimeout(ctx)
-	defer cancel()
-
-	tx = s.newPgRepo.GetRepo().Begin()
+	tx := s.newPgRepo.GetRepo().Begin()
 	defer tx.Rollback()
 
-	response, err := s.repo.DeleteTestimonial(ctx, tx, id)
+	exists, err := s.repo.CheckTestimonialExists(ctx, tx, id)
+	if err != nil {
+		logger.LogError(log, err, "failed to check testimonial existence")
+		err = app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
+		return nil, err
+	}
+	if !exists {
+		logger.LogError(log, nil, "testimonial not found")
+		err = app_errors.AppError("Testimonial not found", app_errors.StatusNotFound)
+		return nil, err
+	}
+
+	getTestimonial, err := s.repo.GetDetailTestimonial(ctx, tx, id)
+	if err != nil {
+		logger.LogError(log, err, "failed to get testimonial detail")
+		err = app_errors.AppError("Fail to get testimonial", app_errors.StatusInternalServerError)
+		return nil, err
+	}
+
+	response, err := s.repo.DeleteTestimonial(ctx, tx, getTestimonial.Data)
 	if err != nil {
 		logger.LogError(log, err, "failed to delete testimonial")
+		err := app_errors.AppError("Fail to delete testimonial", app_errors.StatusInternalServerError)
 		return nil, err
 	}
 

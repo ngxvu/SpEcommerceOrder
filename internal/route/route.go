@@ -44,7 +44,7 @@ func ApplicationV1Router(
 		PostRoutes(routerV1, handlers.NewPostHandler(newPgRepo, postService))
 
 		// Testimonial
-		testimonialRepo := repo.NewTestimonialRepository()
+		testimonialRepo := repo.NewTestimonialRepository(newPgRepo)
 		testimonialService := services.NewTestimonialService(testimonialRepo, newPgRepo)
 		TestimonialRoutes(routerV1, handlers.NewTestimonialHandler(newPgRepo, testimonialService))
 

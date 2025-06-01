@@ -6,7 +6,6 @@ import (
 	pgGorm "kimistore/internal/repo/pg-gorm"
 	"kimistore/internal/services"
 	"kimistore/internal/utils/app_errors"
-	"kimistore/pkg/http/logger"
 	"kimistore/pkg/http/paging"
 	"net/http"
 )
@@ -28,20 +27,18 @@ func NewTestimonialHandler(
 // CreateTestimonial creates a new testimonial
 func (h *TestimonialHandler) CreateTestimonial(ctx *gin.Context) {
 
-	log := logger.WithTag("TestimonialHandler|CreateTestimonial")
-
 	var req model.TestimonialRequest
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		err = app_errors.AppError("Invalid request", app_errors.StatusValidationError)
-		logger.LogError(log, err, " fail to bind json")
+		err = app_errors.AppError(app_errors.StatusBadRequest, app_errors.StatusBadRequest)
 		_ = ctx.Error(err)
 		return
 	}
 
-	testimonial, err := h.TestimonialService.CreateTestimonial(ctx, req)
+	context := ctx.Request.Context()
+
+	testimonial, err := h.TestimonialService.CreateTestimonial(context, req)
 	if err != nil {
-		logger.LogError(log, err, "failed to create testimonial")
 		_ = ctx.Error(err)
 		return
 	}
@@ -50,19 +47,13 @@ func (h *TestimonialHandler) CreateTestimonial(ctx *gin.Context) {
 }
 
 func (h *TestimonialHandler) GetDetailTestimonial(ctx *gin.Context) {
-	log := logger.WithTag("TestimonialHandler|GetDetailTestimonial")
 
 	id := ctx.Param("id")
-	if id == "" {
-		err := app_errors.AppError("Testimonial ID is required", app_errors.StatusBadRequest)
-		logger.LogError(log, err, "Testimonial ID is required")
-		_ = ctx.Error(err)
-		return
-	}
 
-	testimonial, err := h.TestimonialService.GetDetailTestimonial(ctx, id)
+	context := ctx.Request.Context()
+
+	testimonial, err := h.TestimonialService.GetDetailTestimonial(context, id)
 	if err != nil {
-		logger.LogError(log, err, "failed to get testimonial detail")
 		_ = ctx.Error(err)
 		return
 	}
@@ -71,14 +62,14 @@ func (h *TestimonialHandler) GetDetailTestimonial(ctx *gin.Context) {
 }
 
 func (h *TestimonialHandler) GetListTestimonial(ctx *gin.Context) {
-	log := logger.WithTag("TestimonialHandler|GetListTestimonial")
+
+	context := ctx.Request.Context()
 
 	var req paging.Param
 
 	err := ctx.BindQuery(&req)
 	if err != nil {
-		err = app_errors.AppError("fail to get pagination", app_errors.StatusValidationError)
-		logger.LogError(log, err, "Failed to bind query")
+		err = app_errors.AppError(app_errors.StatusBadRequest, app_errors.StatusBadRequest)
 		_ = ctx.Error(err)
 		return
 	}
@@ -88,9 +79,8 @@ func (h *TestimonialHandler) GetListTestimonial(ctx *gin.Context) {
 		Pager: paging.NewPagerWithGinCtx(ctx),
 	}
 
-	rs, err := h.TestimonialService.GetListTestimonial(ctx, filter)
+	rs, err := h.TestimonialService.GetListTestimonial(context, filter)
 	if err != nil {
-		logger.LogError(log, err, "failed to get list of testimonials")
 		_ = ctx.Error(err)
 		return
 	}
@@ -99,27 +89,20 @@ func (h *TestimonialHandler) GetListTestimonial(ctx *gin.Context) {
 }
 
 func (h *TestimonialHandler) UpdateTestimonial(ctx *gin.Context) {
-	log := logger.WithTag("TestimonialHandler|UpdateTestimonial")
+
+	context := ctx.Request.Context()
 
 	id := ctx.Param("id")
-	if id == "" {
-		err := app_errors.AppError("Testimonial ID is required", app_errors.StatusBadRequest)
-		logger.LogError(log, err, "Testimonial ID is required")
-		_ = ctx.Error(err)
-		return
-	}
 
 	var req model.TestimonialRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		err = app_errors.AppError("Invalid request", app_errors.StatusValidationError)
-		logger.LogError(log, err, "fail to bind json")
+		err = app_errors.AppError(app_errors.StatusBadRequest, app_errors.StatusBadRequest)
 		_ = ctx.Error(err)
 		return
 	}
 
-	testimonial, err := h.TestimonialService.UpdateTestimonial(ctx, id, req)
+	testimonial, err := h.TestimonialService.UpdateTestimonial(context, id, req)
 	if err != nil {
-		logger.LogError(log, err, "failed to update testimonial")
 		_ = ctx.Error(err)
 		return
 	}
@@ -128,19 +111,13 @@ func (h *TestimonialHandler) UpdateTestimonial(ctx *gin.Context) {
 }
 
 func (h *TestimonialHandler) DeleteTestimonial(ctx *gin.Context) {
-	log := logger.WithTag("TestimonialHandler|DeleteTestimonial")
+
+	context := ctx.Request.Context()
 
 	id := ctx.Param("id")
-	if id == "" {
-		err := app_errors.AppError("Testimonial ID is required", app_errors.StatusBadRequest)
-		logger.LogError(log, err, "Testimonial ID is required")
-		_ = ctx.Error(err)
-		return
-	}
 
-	response, err := h.TestimonialService.DeleteTestimonial(ctx, id)
+	response, err := h.TestimonialService.DeleteTestimonial(context, id)
 	if err != nil {
-		logger.LogError(log, err, "failed to delete testimonial")
 		_ = ctx.Error(err)
 		return
 	}
