@@ -65,7 +65,7 @@ func (s *MediaService) ProcessAndUploadImages(ctx *gin.Context, files []*multipa
 	if len(errorChan) > 0 {
 		for err := range errorChan {
 			logger.LogError(log, err, "Error processing images")
-			_ = ctx.Error(err)
+			err = app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
 			return nil, err
 		}
 	}
@@ -90,12 +90,14 @@ func (s *MediaService) processSingleImage(ctx context.Context, file *multipart.F
 	// Extract image metadata
 	img, format, err := s.extractImageMetadata(file)
 	if err != nil {
+		logger.LogError(log, err, "Error extracting image metadata")
 		return nil, err
 	}
 
 	// Upload to S3
 	url, err := s.uploadToS3(file, log)
 	if err != nil {
+		logger.LogError(log, err, "Error uploading to S3")
 		return nil, err
 	}
 
@@ -109,6 +111,7 @@ func (s *MediaService) processSingleImage(ctx context.Context, file *multipart.F
 
 	saveMedia, err := s.saveMedia(ctx, media)
 	if err != nil {
+		logger.LogError(log, err, "Error saving media")
 		return nil, err
 	}
 
@@ -120,13 +123,10 @@ func (s *MediaService) saveMedia(ctx context.Context, media model.Media) (*model
 
 	log := logger.WithTag("MediaService|SaveMedia")
 
-	tx, cancel := s.newPgRepo.DBWithTimeout(ctx)
-	defer cancel()
-
-	tx = s.newPgRepo.GetRepo().Begin()
+	tx := s.newPgRepo.GetRepo().Begin()
 	defer tx.Rollback()
 
-	savedMedia, err := s.repo.SaveMedia(media, tx, ctx)
+	savedMedia, err := s.repo.SaveMedia(ctx, tx, media)
 	if err != nil {
 		logger.LogError(log, err, "Failed to save media")
 		err = app_errors.AppError("Failed to save images", app_errors.StatusInternalServerError)

@@ -29,7 +29,7 @@ func ApplicationV1Router(
 		AuthorizationUserRoutes(routerV1, handlers.NewAuthUserHandler(newPgRepo, authUserService))
 
 		// Media
-		mediaRepo := repo.NewMediaRepository()
+		mediaRepo := repo.NewMediaRepository(newPgRepo)
 		mediaService := services.NewMediaService(mediaRepo, newPgRepo)
 		MediaRoutes(routerV1, handlers.NewMediaHandler(newPgRepo, mediaService))
 

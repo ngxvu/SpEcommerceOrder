@@ -46,6 +46,7 @@ func (m *MediaHandler) UploadListImage(ctx *gin.Context) {
 	// Process and upload images
 	mediaList, err := m.mediaService.ProcessAndUploadImages(ctx, files)
 	if err != nil {
+		_ = ctx.Error(err)
 		return
 	}
 

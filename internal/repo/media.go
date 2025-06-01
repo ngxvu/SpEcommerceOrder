@@ -4,23 +4,33 @@ import (
 	"context"
 	"gorm.io/gorm"
 	model "kimistore/internal/models"
+	pgGorm "kimistore/internal/repo/pg-gorm"
 	"kimistore/internal/utils"
 )
 
 type MediaRepository struct {
+	db pgGorm.PGInterface
 }
 
-func NewMediaRepository() *MediaRepository {
-	return &MediaRepository{}
+func NewMediaRepository(newPgRepo pgGorm.PGInterface) *MediaRepository {
+	return &MediaRepository{
+		db: newPgRepo,
+	}
 }
 
 type MediaRepositoryInterface interface {
-	SaveMedia(media model.Media, tx *gorm.DB, ctx context.Context) (*model.ImageSaveResponse, error)
+	SaveMedia(ctx context.Context, tx *gorm.DB, media model.Media) (*model.ImageSaveResponse, error)
 }
 
-func (r *MediaRepository) SaveMedia(media model.Media, tx *gorm.DB, ctx context.Context) (*model.ImageSaveResponse, error) {
+func (r *MediaRepository) SaveMedia(ctx context.Context, tx *gorm.DB, media model.Media) (*model.ImageSaveResponse, error) {
 
-	err := tx.Create(&media).Error
+	var cancel context.CancelFunc
+	if tx == nil {
+		tx, cancel = r.db.DBWithTimeout(ctx)
+		defer cancel()
+	}
+
+	err := tx.WithContext(ctx).Create(&media).Error
 	if err != nil {
 		return nil, err
 	}
