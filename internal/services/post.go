@@ -34,13 +34,10 @@ func (s *PostService) CreatePost(ctx context.Context, postRequest model.CreatePo
 
 	log := logger.WithTag("PostService|CreatePost")
 
-	tx, cancel := s.newPgRepo.DBWithTimeout(ctx)
-	defer cancel()
-
-	tx = s.newPgRepo.GetRepo().Begin()
+	tx := s.newPgRepo.GetRepo().Begin()
 	defer tx.Rollback()
 
-	postExistsByName, err := s.repo.PostExistsByName(tx, *postRequest.Title)
+	postExistsByName, err := s.repo.PostExistsByName(ctx, tx, *postRequest.Title)
 	if err != nil {
 		logger.LogError(log, err, "Error checking if post exists")
 		err = app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
@@ -75,7 +72,7 @@ func (s *PostService) GetDetailPost(ctx context.Context, id string) (*model.GetP
 	defer cancel()
 
 	// Check if the post exists
-	exists, err := s.repo.CheckPostExistById(tx, id)
+	exists, err := s.repo.CheckPostExistById(ctx, tx, id)
 	if err != nil {
 		logger.LogError(log, err, "Failed to check if post exists")
 		err = app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
@@ -104,7 +101,7 @@ func (s *PostService) GetListPost(ctx context.Context, filter *model.ListPostFil
 	tx, cancel := s.newPgRepo.DBWithTimeout(ctx)
 	defer cancel()
 
-	result, err := s.repo.GetListPost(filter, tx)
+	result, err := s.repo.GetListPost(ctx, filter, tx)
 	if err != nil {
 		logger.LogError(log, err, "Error getting list of Posts")
 		err = app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
@@ -116,27 +113,23 @@ func (s *PostService) GetListPost(ctx context.Context, filter *model.ListPostFil
 func (s *PostService) UpdatePost(ctx context.Context, id string, postRequest model.UpdatePostRequest) (*model.GetPostResponse, error) {
 	log := logger.WithTag("PostService|UpdatePost")
 
-	tx, cancel := s.newPgRepo.DBWithTimeout(ctx)
-	defer cancel()
-
-	tx = s.newPgRepo.GetRepo().Begin()
+	tx := s.newPgRepo.GetRepo().Begin()
 	defer tx.Rollback()
 
 	// Check if the post exists
-	exists, err := s.repo.CheckPostExistById(tx, id)
+	exists, err := s.repo.CheckPostExistById(ctx, tx, id)
 	if err != nil {
 		logger.LogError(log, err, "Failed to check if post exists")
 		err = app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
 		return nil, err
 	}
 	if !exists {
-		logger.LogError(log, nil, "Post not found")
 		err = app_errors.AppError("Post not found", app_errors.StatusNotFound)
 		return nil, err
 	}
 
 	if postRequest.Title != nil {
-		postExistsByName, err := s.repo.PostExistsByName(tx, *postRequest.Title)
+		postExistsByName, err := s.repo.PostExistsByName(ctx, tx, *postRequest.Title)
 		if err != nil {
 			logger.LogError(log, err, "Error checking if post exists by name")
 			err = app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
@@ -176,14 +169,11 @@ func (s *PostService) UpdatePost(ctx context.Context, id string, postRequest mod
 func (s *PostService) DeletePost(ctx context.Context, id string) (*model.DeletePostResponse, error) {
 	log := logger.WithTag("PostService|DeletePost")
 
-	tx, cancel := s.newPgRepo.DBWithTimeout(ctx)
-	defer cancel()
-
-	tx = s.newPgRepo.GetRepo().Begin()
+	tx := s.newPgRepo.GetRepo().Begin()
 	defer tx.Rollback()
 
 	// Check if the post exists
-	exists, err := s.repo.CheckPostExistById(tx, id)
+	exists, err := s.repo.CheckPostExistById(ctx, tx, id)
 	if err != nil {
 		logger.LogError(log, err, "Failed to check if post exists")
 		err = app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
@@ -195,8 +185,15 @@ func (s *PostService) DeletePost(ctx context.Context, id string) (*model.DeleteP
 		return nil, err
 	}
 
+	getPost, err := s.repo.GetPostV1(ctx, tx, id)
+	if err != nil {
+		logger.LogError(log, err, "Failed to get post details")
+		err = app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
+		return nil, err
+	}
+
 	// Call the repository to delete the post
-	rs, err := s.repo.DeletePost(ctx, tx, id)
+	rs, err := s.repo.DeletePost(ctx, tx, *getPost)
 	if err != nil {
 		logger.LogError(log, err, "Failed to delete post")
 		err = app_errors.AppError("Failed to delete post", app_errors.StatusInternalServerError)

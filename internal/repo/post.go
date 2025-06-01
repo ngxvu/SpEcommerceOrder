@@ -4,28 +4,40 @@ import (
 	"context"
 	"gorm.io/gorm"
 	model "kimistore/internal/models"
+	pgGorm "kimistore/internal/repo/pg-gorm"
 	"kimistore/internal/utils"
 	"time"
 )
 
 type PostRepository struct {
+	db pgGorm.PGInterface
 }
 
-func NewPostRepository() *PostRepository {
-	return &PostRepository{}
+func NewPostRepository(newPgRepo pgGorm.PGInterface) *PostRepository {
+	return &PostRepository{
+		db: newPgRepo,
+	}
 }
 
 type PostRepositoryInterface interface {
 	CreatePost(ctx context.Context, tx *gorm.DB, post model.Post) (*model.GetPostResponse, error)
-	CheckPostExistById(tx *gorm.DB, id string) (bool, error)
-	PostExistsByName(tx *gorm.DB, name string) (bool, error)
+	CheckPostExistById(ctx context.Context, tx *gorm.DB, id string) (bool, error)
+	PostExistsByName(ctx context.Context, tx *gorm.DB, title string) (bool, error)
+	GetPostV1(ctx context.Context, tx *gorm.DB, id string) (*model.Post, error)
 	GetDetailPost(ctx context.Context, tx *gorm.DB, id string) (*model.GetPostResponse, error)
-	GetListPost(filter *model.ListPostFilter, pgRepo *gorm.DB) (*model.ListPostResponse, error)
+	GetListPost(ctx context.Context, filter *model.ListPostFilter, pgRepo *gorm.DB) (*model.ListPostResponse, error)
 	UpdatePost(ctx context.Context, tx *gorm.DB, post model.Post) (*model.GetPostResponse, error)
-	DeletePost(ctx context.Context, tx *gorm.DB, id string) (*model.DeletePostResponse, error)
+	DeletePost(ctx context.Context, tx *gorm.DB, post model.Post) (*model.DeletePostResponse, error)
 }
 
-func (p *PostRepository) CheckPostExistById(tx *gorm.DB, id string) (bool, error) {
+func (p *PostRepository) CheckPostExistById(ctx context.Context, tx *gorm.DB, id string) (bool, error) {
+
+	var cancel context.CancelFunc
+	if tx == nil {
+		tx, cancel = p.db.DBWithTimeout(ctx)
+		defer cancel()
+	}
+
 	var count int64
 	if err := tx.Model(&model.Post{}).Where("id = ?", id).Count(&count).Error; err != nil {
 		return false, err
@@ -33,7 +45,14 @@ func (p *PostRepository) CheckPostExistById(tx *gorm.DB, id string) (bool, error
 	return count > 0, nil
 }
 
-func (p *PostRepository) PostExistsByName(tx *gorm.DB, title string) (bool, error) {
+func (p *PostRepository) PostExistsByName(ctx context.Context, tx *gorm.DB, title string) (bool, error) {
+
+	var cancel context.CancelFunc
+	if tx == nil {
+		tx, cancel = p.db.DBWithTimeout(ctx)
+		defer cancel()
+	}
+
 	var count int64
 	if err := tx.Model(&model.Post{}).Where("title = ?", title).Count(&count).Error; err != nil {
 		return false, err
@@ -41,10 +60,32 @@ func (p *PostRepository) PostExistsByName(tx *gorm.DB, title string) (bool, erro
 	return count > 0, nil
 }
 
+func (p *PostRepository) GetPostV1(ctx context.Context, tx *gorm.DB, id string) (*model.Post, error) {
+
+	var cancel context.CancelFunc
+	if tx == nil {
+		tx, cancel = p.db.DBWithTimeout(ctx)
+		defer cancel()
+	}
+
+	var post model.Post
+	if err := tx.Where("id = ?", id).First(&post).Error; err != nil {
+		return nil, err
+	}
+
+	return &post, nil
+}
+
 func (p *PostRepository) CreatePost(ctx context.Context, tx *gorm.DB, post model.Post) (*model.GetPostResponse, error) {
 
+	var cancel context.CancelFunc
+	if tx == nil {
+		tx, cancel = p.db.DBWithTimeout(ctx)
+		defer cancel()
+	}
+
 	// Save the post to the database
-	if err := tx.Create(&post).Error; err != nil {
+	if err := tx.WithContext(ctx).Create(&post).Error; err != nil {
 		return nil, err
 	}
 
@@ -114,6 +155,12 @@ func (p *PostRepository) mapperPostsToResponse(post model.Post) model.GetPostRes
 
 func (p *PostRepository) GetDetailPost(ctx context.Context, tx *gorm.DB, id string) (*model.GetPostResponse, error) {
 
+	var cancel context.CancelFunc
+	if tx == nil {
+		tx, cancel = p.db.DBWithTimeout(ctx)
+		defer cancel()
+	}
+
 	var post model.Post
 	if err := tx.Where("id = ?", id).First(&post).Error; err != nil {
 		return nil, err
@@ -129,9 +176,15 @@ func (p *PostRepository) GetDetailPost(ctx context.Context, tx *gorm.DB, id stri
 	return response, nil
 }
 
-func (p *PostRepository) GetListPost(filter *model.ListPostFilter, pgRepo *gorm.DB) (*model.ListPostResponse, error) {
+func (p *PostRepository) GetListPost(ctx context.Context, filter *model.ListPostFilter, tx *gorm.DB) (*model.ListPostResponse, error) {
 
-	tx := pgRepo.Model(&model.Post{})
+	var cancel context.CancelFunc
+	if tx == nil {
+		tx, cancel = p.db.DBWithTimeout(ctx)
+		defer cancel()
+	}
+
+	query := tx.Model(&model.Post{})
 
 	result := &model.ListPostResult{
 		Filter:  filter,
@@ -139,14 +192,14 @@ func (p *PostRepository) GetListPost(filter *model.ListPostFilter, pgRepo *gorm.
 	}
 
 	if filter.PostFilterRequest.Publish != nil {
-		tx = tx.Where("publish = ?", *filter.PostFilterRequest.Publish)
+		query = query.Where("publish = ?", *filter.PostFilterRequest.Publish)
 	}
 
 	filter.Pager.SortableFields = []string{"created_at"}
 
 	pager := filter.Pager
 
-	err := pager.DoQuery(&result.Records, tx).Error
+	err := pager.DoQuery(&result.Records, query).Error
 	if err != nil {
 		return nil, err
 
@@ -171,8 +224,14 @@ func (p *PostRepository) GetListPost(filter *model.ListPostFilter, pgRepo *gorm.
 
 func (p *PostRepository) UpdatePost(ctx context.Context, tx *gorm.DB, post model.Post) (*model.GetPostResponse, error) {
 
+	var cancel context.CancelFunc
+	if tx == nil {
+		tx, cancel = p.db.DBWithTimeout(ctx)
+		defer cancel()
+	}
+
 	// Save the updated post to the database
-	if err := tx.Save(&post).Error; err != nil {
+	if err := tx.WithContext(ctx).Save(&post).Error; err != nil {
 		return nil, err
 	}
 
@@ -186,15 +245,16 @@ func (p *PostRepository) UpdatePost(ctx context.Context, tx *gorm.DB, post model
 	return response, nil
 }
 
-func (p *PostRepository) DeletePost(ctx context.Context, tx *gorm.DB, id string) (*model.DeletePostResponse, error) {
+func (p *PostRepository) DeletePost(ctx context.Context, tx *gorm.DB, post model.Post) (*model.DeletePostResponse, error) {
 
-	var post model.Post
-	if err := tx.Where("id = ?", id).First(&post).Error; err != nil {
-		return nil, err
+	var cancel context.CancelFunc
+	if tx == nil {
+		tx, cancel = p.db.DBWithTimeout(ctx)
+		defer cancel()
 	}
 
 	// Delete the post from the database
-	if err := tx.Delete(&post).Error; err != nil {
+	if err := tx.WithContext(ctx).Delete(&post).Error; err != nil {
 		return nil, err
 	}
 

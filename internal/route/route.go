@@ -39,7 +39,7 @@ func ApplicationV1Router(
 		ProductRoutes(routerV1, handlers.NewProductHandler(newPgRepo, productService))
 
 		// Post
-		postRepo := repo.NewPostRepository()
+		postRepo := repo.NewPostRepository(newPgRepo)
 		postService := services.NewPostService(postRepo, newPgRepo)
 		PostRoutes(routerV1, handlers.NewPostHandler(newPgRepo, postService))
 
