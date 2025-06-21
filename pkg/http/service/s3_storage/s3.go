@@ -1,6 +1,7 @@
 package s3_storage
 
 import (
+	"basesource/conf"
 	"bytes"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
@@ -8,7 +9,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"io"
-	"kimistore/conf"
 	"mime/multipart"
 	"net/http"
 )

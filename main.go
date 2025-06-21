@@ -1,15 +1,15 @@
 package main
 
 import (
+	"basesource/conf"
+	"basesource/pkg/http/common"
+	"basesource/pkg/http/logger"
+	"basesource/pkg/http/middlewares"
+	"basesource/pkg/http/service/app_config"
+	"basesource/pkg/http/service/app_router"
 	"fmt"
 	limit "github.com/aviddiviner/gin-limit"
 	"github.com/gin-gonic/gin"
-	"kimistore/conf"
-	"kimistore/pkg/http/common"
-	"kimistore/pkg/http/logger"
-	"kimistore/pkg/http/middlewares"
-	"kimistore/pkg/http/service/app_config"
-	"kimistore/pkg/http/service/app_router"
 	"net/http"
 )
 

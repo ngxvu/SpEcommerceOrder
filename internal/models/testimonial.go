@@ -1,8 +1,8 @@
 package models
 
 import (
-	"kimistore/internal/utils"
-	"kimistore/pkg/http/paging"
+	"basesource/internal/utils"
+	"basesource/pkg/http/paging"
 )
 
 type Testimonial struct {

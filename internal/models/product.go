@@ -1,9 +1,9 @@
 package models
 
 import (
+	"basesource/internal/utils"
+	"basesource/pkg/http/paging"
 	"github.com/jinzhu/gorm/dialects/postgres"
-	"kimistore/internal/utils"
-	"kimistore/pkg/http/paging"
 	"time"
 )
 

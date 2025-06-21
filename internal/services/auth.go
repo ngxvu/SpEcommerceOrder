@@ -1,16 +1,16 @@
 package services
 
 import (
+	model "basesource/internal/models"
+	"basesource/internal/repo"
+	pgGorm "basesource/internal/repo/pg-gorm"
+	"basesource/internal/utils"
+	"basesource/internal/utils/app_errors"
+	"basesource/internal/utils/sync_ob"
+	"basesource/pkg/http/logger"
+	"basesource/pkg/http/service/jwt_user"
 	"context"
 	"github.com/sirupsen/logrus"
-	model "kimistore/internal/models"
-	"kimistore/internal/repo"
-	pgGorm "kimistore/internal/repo/pg-gorm"
-	"kimistore/internal/utils"
-	"kimistore/internal/utils/app_errors"
-	"kimistore/internal/utils/sync_ob"
-	"kimistore/pkg/http/logger"
-	"kimistore/pkg/http/service/jwt_user"
 )
 
 type AuthUserService struct {

@@ -1,6 +1,6 @@
 package models
 
-import "kimistore/internal/utils"
+import "basesource/internal/utils"
 
 // model for storage image link
 type Media struct {

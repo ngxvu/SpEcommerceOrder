@@ -1,7 +1,7 @@
 package jwt_user
 
 import (
-	"kimistore/internal/utils"
+	"basesource/internal/utils"
 	"time"
 )
 

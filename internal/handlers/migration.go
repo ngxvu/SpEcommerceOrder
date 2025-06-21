@@ -1,13 +1,13 @@
 package handlers
 
 import (
+	model "basesource/internal/models"
+	repo "basesource/internal/repo/pg-gorm"
+	"basesource/pkg/http/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/go-gormigrate/gormigrate/v2"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
-	model "kimistore/internal/models"
-	repo "kimistore/internal/repo/pg-gorm"
-	"kimistore/pkg/http/logger"
 	"net/http"
 )
 

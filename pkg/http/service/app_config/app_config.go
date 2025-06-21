@@ -1,10 +1,10 @@
 package app_config
 
 import (
+	"basesource/conf"
+	repo "basesource/internal/repo/pg-gorm"
+	"basesource/pkg/http/db"
 	"fmt"
-	"kimistore/conf"
-	repo "kimistore/internal/repo/pg-gorm"
-	"kimistore/pkg/http/db"
 )
 
 type App struct {

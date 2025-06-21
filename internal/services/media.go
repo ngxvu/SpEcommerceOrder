@@ -1,16 +1,16 @@
 package services
 
 import (
+	model "basesource/internal/models"
+	"basesource/internal/repo"
+	pgGorm "basesource/internal/repo/pg-gorm"
+	"basesource/internal/utils/app_errors"
+	"basesource/pkg/http/logger"
+	"basesource/pkg/http/service/s3_storage"
 	"context"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"image"
-	model "kimistore/internal/models"
-	"kimistore/internal/repo"
-	pgGorm "kimistore/internal/repo/pg-gorm"
-	"kimistore/internal/utils/app_errors"
-	"kimistore/pkg/http/logger"
-	"kimistore/pkg/http/service/s3_storage"
 	"mime/multipart"
 	"sync"
 )

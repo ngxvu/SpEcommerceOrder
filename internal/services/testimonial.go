@@ -1,14 +1,14 @@
 package services
 
 import (
+	model "basesource/internal/models"
+	"basesource/internal/repo"
+	pgGorm "basesource/internal/repo/pg-gorm"
+	"basesource/internal/utils/app_errors"
+	"basesource/internal/utils/sync_ob"
+	"basesource/pkg/http/logger"
+	"basesource/pkg/http/paging"
 	"context"
-	model "kimistore/internal/models"
-	"kimistore/internal/repo"
-	pgGorm "kimistore/internal/repo/pg-gorm"
-	"kimistore/internal/utils/app_errors"
-	"kimistore/internal/utils/sync_ob"
-	"kimistore/pkg/http/logger"
-	"kimistore/pkg/http/paging"
 )
 
 type TestimonialService struct {

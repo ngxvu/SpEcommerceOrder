@@ -1,11 +1,11 @@
 package db
 
 import (
+	"basesource/conf"
 	"fmt"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/plugin/dbresolver"
-	"kimistore/conf"
 	"log"
 	"sync"
 )

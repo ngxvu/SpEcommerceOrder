@@ -1,15 +1,15 @@
 package handlers
 
 import (
+	model "basesource/internal/models"
+	pgGorm "basesource/internal/repo/pg-gorm"
+	"basesource/internal/services"
+	"basesource/internal/utils"
+	"basesource/internal/utils/app_errors"
 	"github.com/gin-gonic/gin"
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
-	model "kimistore/internal/models"
-	pgGorm "kimistore/internal/repo/pg-gorm"
-	"kimistore/internal/services"
-	"kimistore/internal/utils"
-	"kimistore/internal/utils/app_errors"
 	"net/http"
 )
 

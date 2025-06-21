@@ -1,11 +1,11 @@
 package middlewares
 
 import (
+	"basesource/conf"
+	"basesource/internal/utils/app_errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
-	"kimistore/conf"
-	"kimistore/internal/utils/app_errors"
 	"strings"
 )
 

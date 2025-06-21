@@ -1,9 +1,9 @@
 package app_errors
 
 import (
+	"basesource/internal/utils"
 	"errors"
 	"github.com/gin-gonic/gin"
-	"kimistore/internal/utils"
 	"net/http"
 )
 

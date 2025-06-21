@@ -1,16 +1,16 @@
 package app_router
 
 import (
+	"basesource/internal/route"
+	"basesource/internal/utils/app_errors"
+	"basesource/pkg/http/common"
+	"basesource/pkg/http/middlewares"
+	"basesource/pkg/http/service/app_config"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/contrib/static"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	"kimistore/internal/route"
-	"kimistore/internal/utils/app_errors"
-	"kimistore/pkg/http/common"
-	"kimistore/pkg/http/middlewares"
-	"kimistore/pkg/http/service/app_config"
 )
 
 func SetupRouter(router *gin.Engine, configCors cors.Config, app *app_config.App) {

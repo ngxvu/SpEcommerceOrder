@@ -1,14 +1,14 @@
 package route
 
 import (
+	"basesource/internal/handlers"
+	"basesource/internal/repo"
+	pgGorm "basesource/internal/repo/pg-gorm"
+	"basesource/internal/services"
+	"basesource/pkg/http/middlewares"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	"kimistore/internal/handlers"
-	"kimistore/internal/repo"
-	pgGorm "kimistore/internal/repo/pg-gorm"
-	"kimistore/internal/services"
-	"kimistore/pkg/http/middlewares"
 )
 
 func ApplicationV1Router(

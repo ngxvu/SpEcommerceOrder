@@ -1,13 +1,13 @@
 package jwt_user
 
 import (
+	"basesource/conf"
+	model "basesource/internal/models"
+	"basesource/internal/utils"
+	"basesource/internal/utils/app_errors"
+	"basesource/pkg/http/logger"
 	"context"
 	"github.com/golang-jwt/jwt/v4"
-	"kimistore/conf"
-	model "kimistore/internal/models"
-	"kimistore/internal/utils"
-	"kimistore/internal/utils/app_errors"
-	"kimistore/pkg/http/logger"
 	"strconv"
 	"time"
 )

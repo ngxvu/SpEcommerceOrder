@@ -1,0 +1,15 @@
+services:
+  base-db:
+    build: .
+    container_name: base-db
+    env_file:
+      - ./db.env
+    ports:
+      - "5434:5432"
+    volumes:
+      - base-data:/var/lib/postgresql/data
+    command: postgres -c hba_file=/etc/postgresql/pg_hba.conf -c password_encryption=md5
+    restart: always
+
+volumes:
+  base-data:

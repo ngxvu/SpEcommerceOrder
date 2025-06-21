@@ -1,15 +1,15 @@
 package services
 
 import (
+	model "basesource/internal/models"
+	"basesource/internal/repo"
+	pgGorm "basesource/internal/repo/pg-gorm"
+	"basesource/internal/utils/app_errors"
+	"basesource/pkg/http/logger"
+	"basesource/pkg/http/paging"
 	"context"
 	"encoding/json"
 	"github.com/jinzhu/gorm/dialects/postgres"
-	model "kimistore/internal/models"
-	"kimistore/internal/repo"
-	pgGorm "kimistore/internal/repo/pg-gorm"
-	"kimistore/internal/utils/app_errors"
-	"kimistore/pkg/http/logger"
-	"kimistore/pkg/http/paging"
 )
 
 type ProductService struct {

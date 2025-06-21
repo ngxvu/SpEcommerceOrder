@@ -1,10 +1,10 @@
 package repo
 
 import (
+	model "basesource/internal/models"
+	pgGorm "basesource/internal/repo/pg-gorm"
 	"context"
 	"gorm.io/gorm"
-	model "kimistore/internal/models"
-	pgGorm "kimistore/internal/repo/pg-gorm"
 )
 
 type AuthUserRepository struct {

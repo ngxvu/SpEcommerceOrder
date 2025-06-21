@@ -1,4 +1,4 @@
-module kimistore
+module basesource
 
 go 1.23.6
 

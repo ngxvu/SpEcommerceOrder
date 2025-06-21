@@ -1,6 +1,6 @@
 package models
 
-import "kimistore/internal/utils"
+import "basesource/internal/utils"
 
 type User struct {
 	BaseModel

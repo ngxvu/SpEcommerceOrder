@@ -1,6 +1,6 @@
 package common
 
 const (
-	APPNAME          = "kimistore"
+	APPNAME          = "base"
 	HeaderXRequestID = "x-request-id"
 )
