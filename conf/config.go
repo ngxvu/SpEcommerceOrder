@@ -9,11 +9,11 @@ import (
 
 type Config struct {
 	// Database configs
-	PgUser     string `env:"POSTGRES_USER"`
-	PgPassword string `env:"POSTGRES_PASSWORD"`
-	PgHost     string `env:"POSTGRES_HOST"`
-	PgPort     string `env:"POSTGRES_PORT" envDefault:"5432"`
-	PgDatabase string `env:"POSTGRES_DATABASE"`
+	PostgresUser     string `env:"POSTGRES_USER"`
+	PostgresPassword string `env:"POSTGRES_PASSWORD"`
+	PostgresHost     string `env:"POSTGRES_HOST"`
+	PostgresPort     string `env:"POSTGRES_PORT" envDefault:"5432"`
+	PostgresDatabase string `env:"POSTGRES_DATABASE"`
 
 	// Server configs
 	ServerPort string `env:"SERVER_PORT" envDefault:"8080"`
