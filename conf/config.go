@@ -9,21 +9,14 @@ import (
 
 type Config struct {
 	// Database configs
-	PgUser     string `env:"PG_USER"`
-	PgPassword string `env:"PG_PASSWORD"`
-	PgHost     string `env:"PG_HOST"`
-	PgPort     string `env:"PG_PORT" envDefault:"5432"`
-	PgDatabase string `env:"PG_DATABASE"`
+	PgUser     string `env:"POSTGRES_USER"`
+	PgPassword string `env:"POSTGRES_PASSWORD"`
+	PgHost     string `env:"POSTGRES_HOST"`
+	PgPort     string `env:"POSTGRES_PORT" envDefault:"5432"`
+	PgDatabase string `env:"POSTGRES_DATABASE"`
 
 	// Server configs
 	ServerPort string `env:"SERVER_PORT" envDefault:"8080"`
-
-	// DigitalOcean configs
-	S3SecretKey string `env:"S3_SECRET_KEY"`
-	S3AccessKey string `env:"S3_ACCESS_KEY"`
-	S3Bucket    string `env:"S3_BUCKET"`
-	S3Region    string `env:"S3_REGION"`
-	S3Endpoint  string `env:"S3_ENDPOINT"`
 
 	// JWT Security configs
 	JWTAccessSecure     string `env:"JWT_ACCESS_SECURE"`
