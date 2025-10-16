@@ -1,15 +1,29 @@
 services:
+#to run postgres container with env variables from .env file
+#using the command:
+#  docker-compose --env-file <path_to_.env_file> -f <path_to_docker_compose_yml_file> up
+#  for example:
+#  docker-compose --env-file C:\Users\NGUYe\GolandProjects\Basesource\base-source\.env -f C:\Users\NGUYe\GolandProjects\Basesource\base-source\pkg\http\db\docker-compose.yml up
   base-db:
-    build: .
+    image: postgres:17-alpine
     container_name: base-db
-    env_file:
-      - ./db.env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DATABASE: ${POSTGRES_DATABASE}
+      POSTGRES_HOST: ${POSTGRES_HOST}
     ports:
-      - "5434:5432"
+#    local machine port to map to container port 5432
+#    < local machine port > : < container port >
+      - "${POSTGRES_PORT}:5432"
     volumes:
+#      this is named volumed method to persist data, this volume this belong to the container
+#      the data will be stored in docker volumes folder on the host machine
+#      to see where the volume is located on the host machine run the command:
+#      docker volume inspect <volume_name>
+#      for example:
+#      docker volume inspect base-data
       - base-data:/var/lib/postgresql/data
-    command: postgres -c hba_file=/etc/postgresql/pg_hba.conf -c password_encryption=md5
     restart: always
-
 volumes:
   base-data:
