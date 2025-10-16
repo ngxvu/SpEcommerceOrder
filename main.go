@@ -10,6 +10,7 @@ import (
 	"fmt"
 	limit "github.com/aviddiviner/gin-limit"
 	"github.com/gin-gonic/gin"
+	"log"
 	"net/http"
 )
 
@@ -46,6 +47,7 @@ func startServer(router http.Handler, config *conf.Config) {
 		Addr:    serverPort,
 		Handler: router,
 	}
+	log.Println("Server started on port", serverPort)
 	if err := s.ListenAndServe(); err != nil {
 		_ = fmt.Errorf("failed to start server on port %s: %w", serverPort, err)
 		panic(err)
