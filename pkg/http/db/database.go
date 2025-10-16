@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/plugin/dbresolver"
 	"log"
 	"sync"
 )
@@ -24,11 +23,11 @@ type DatabaseConfig struct {
 
 // DatabaseCredentials represents standardized database credentials structure
 type DatabaseCredentials struct {
-	PgUser     string `json:"pgUser"`
-	PgPassword string `json:"pgPassword"`
-	PgHost     string `json:"pgHost"`
-	PgPort     string `json:"pgPort"`
-	PgDatabase string `json:"pgDatabase"`
+	postgresUser     string `json:"postgresUser"`
+	postgresPassword string `json:"postgresPassword"`
+	postgresHost     string `json:"postgresHost"`
+	postgresPort     string `json:"postgresPort"`
+	postgresDatabase string `json:"postgresDatabase"`
 }
 
 var (
@@ -49,7 +48,7 @@ func InitDatabase(config *conf.Config) (*gorm.DB, error) {
 func initializeDatabase(config *conf.Config) (*gorm.DB, error) {
 	// Create connection string using environment config
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		config.PgHost, config.PgPort, config.PgUser, config.PgPassword, config.PgDatabase)
+		config.PostgresHost, config.PostgresPort, config.PostgresUser, config.PostgresPassword, config.PostgresDatabase)
 
 	// Open database connection
 	gormDB, err := gorm.Open(postgres.New(postgres.Config{
@@ -59,17 +58,6 @@ func initializeDatabase(config *conf.Config) (*gorm.DB, error) {
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
-	}
-
-	// Configure read replicas
-	dialector := postgres.New(postgres.Config{
-		DSN: dsn,
-	})
-
-	if err = gormDB.Use(dbresolver.Register(dbresolver.Config{
-		Replicas: []gorm.Dialector{dialector},
-	})); err != nil {
-		return nil, fmt.Errorf("failed to register db resolver: %w", err)
 	}
 
 	// Verify connection
