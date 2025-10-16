@@ -29,16 +29,6 @@ func (m *MigrationHandler) BaseMigratePublic(ctx *gin.Context, tx *gorm.DB) erro
 	sqlCommands := []string{
 		`CREATE SCHEMA IF NOT EXISTS public`,
 		`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`,
-		`DO $$ BEGIN 
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'inventory_status') THEN
-        CREATE TYPE inventory_status AS ENUM ('in stock', 'out of stock', 'low stock');
-    END IF;
-END $$`,
-		`DO $$ BEGIN 
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'publish') THEN
-        CREATE TYPE publish AS ENUM ('draft', 'published');
-    END IF;
-END $$`,
 	}
 
 	for _, sql := range sqlCommands {
@@ -51,9 +41,6 @@ END $$`,
 
 	models := []interface{}{
 		&model.User{},
-		&model.Post{},
-		&model.Product{},
-		&model.Media{},
 	}
 
 	tx.Config.NamingStrategy = schema.NamingStrategy{
@@ -82,19 +69,6 @@ func (m *MigrationHandler) MigrateCmdPublic(ctx *gin.Context) {
 			ID: "20220523172948",
 			Migrate: func(tx *gorm.DB) error {
 				return m.BaseMigratePublic(ctx, tx)
-			},
-		},
-		{
-			ID: "20220523172949",
-			Migrate: func(tx *gorm.DB) error {
-				models := []interface{}{
-					&model.Testimonial{},
-				}
-
-				if err := tx.AutoMigrate(models...); err != nil {
-					return err
-				}
-				return nil
 			},
 		},
 	})
