@@ -9,27 +9,6 @@ import (
 	"sync"
 )
 
-type DatabaseConfig struct {
-	Read struct {
-		Hostname   string
-		Name       string
-		Username   string
-		Password   string
-		Port       int
-		Parameter  string
-		DriverConn string
-	}
-}
-
-// DatabaseCredentials represents standardized database credentials structure
-type DatabaseCredentials struct {
-	postgresUser     string `json:"postgresUser"`
-	postgresPassword string `json:"postgresPassword"`
-	postgresHost     string `json:"postgresHost"`
-	postgresPort     string `json:"postgresPort"`
-	postgresDatabase string `json:"postgresDatabase"`
-}
-
 var (
 	dbInstance *gorm.DB
 	once       sync.Once
