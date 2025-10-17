@@ -29,7 +29,7 @@ func (a *AuthUserRepository) Register(ctx context.Context, user *model.User, tx 
 		defer cancel()
 	}
 
-	if err := tx.WithContext(ctx).Create(user).Error; err != nil {
+	if err := tx.Create(user).Error; err != nil {
 		return nil, err
 	}
 
