@@ -4,6 +4,7 @@ import (
 	model "basesource/internal/models"
 	pgGorm "basesource/internal/repo/pg-gorm"
 	"context"
+	"github.com/pkg/errors"
 	"gorm.io/gorm"
 )
 
@@ -45,6 +46,9 @@ func (a *AuthUserRepository) GetUser(ctx context.Context, userMap map[string]int
 
 	var user model.User
 	if err := tx.Where(userMap).First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
 		return nil, err
 	}
 	return &user, nil
