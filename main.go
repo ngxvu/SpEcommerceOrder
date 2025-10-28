@@ -5,8 +5,8 @@ import (
 	"basesource/internal/http/routes"
 	"basesource/pkg/core/configloader"
 	"basesource/pkg/core/logger"
-	"basesource/pkg/http/common"
 	"basesource/pkg/http/middlewares"
+	"basesource/pkg/http/utils"
 	"fmt"
 	limit "github.com/aviddiviner/gin-limit"
 	"github.com/gin-gonic/gin"
@@ -15,7 +15,7 @@ import (
 )
 
 func main() {
-	logger.Init(common.APPNAME)
+	logger.Init(utils.APPNAME)
 
 	// Initialize application
 	app, err := bootstrap.InitializeApp()

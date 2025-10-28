@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package order;
+option go_package = "basesource/pkg/proto/orderpb";
+
+service OrderService {
+  rpc CreateOrder(CreateOrderRequest) returns (CreateOrderResponse);
+}
+
+message CreateOrderRequest {
+  string user_id = 1;
+  int64 amount = 2;
+}
+
+message CreateOrderResponse {
+  string order_id = 1;
+}
