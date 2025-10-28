@@ -1,4 +1,4 @@
-package jwt_user
+package jwt
 
 import (
 	"basesource/internal/utils"

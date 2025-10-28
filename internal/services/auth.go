@@ -7,7 +7,7 @@ import (
 	"basesource/internal/utils"
 	"basesource/internal/utils/app_errors"
 	"basesource/internal/utils/sync_ob"
-	jwt_user2 "basesource/pkg/core/jwt_user"
+	jwt_user2 "basesource/pkg/core/jwt"
 	"basesource/pkg/core/logger"
 	"context"
 	"github.com/sirupsen/logrus"

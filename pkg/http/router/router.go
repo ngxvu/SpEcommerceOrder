@@ -1,9 +1,9 @@
-package app_router
+package router
 
 import (
 	"basesource/internal/route"
 	"basesource/internal/utils/app_errors"
-	"basesource/pkg/core/app_config"
+	"basesource/pkg/core/config"
 	"basesource/pkg/http/common"
 	"basesource/pkg/http/middlewares"
 	"github.com/gin-contrib/cors"
@@ -12,7 +12,7 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func SetupRouter(router *gin.Engine, configCors cors.Config, app *app_config.App) {
+func SetupRouter(router *gin.Engine, configCors cors.Config, app *config.App) {
 	router.Use(cors.New(configCors))
 	router.Use(middlewares.RequestIDMiddleware())
 	router.Use(middlewares.RequestLogger(common.APPNAME))

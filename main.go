@@ -2,11 +2,11 @@ package main
 
 import (
 	"basesource/conf"
-	"basesource/pkg/core/app_config"
+	"basesource/pkg/core/config"
 	"basesource/pkg/core/logger"
 	"basesource/pkg/http/common"
 	"basesource/pkg/http/middlewares"
-	"basesource/pkg/http/service/app_router"
+	"basesource/pkg/http/service/router"
 	"fmt"
 	limit "github.com/aviddiviner/gin-limit"
 	"github.com/gin-gonic/gin"
@@ -18,7 +18,7 @@ func main() {
 	logger.Init(common.APPNAME)
 
 	// Initialize application
-	app, err := app_config.InitializeApp()
+	app, err := config.InitializeApp()
 	if err != nil {
 		logger.LogError(logger.WithTag("Backend|Main"), err, "failed to initialize application")
 		return
@@ -36,7 +36,7 @@ func main() {
 		return
 	}
 
-	app_router.SetupRouter(router, configCors, app)
+	router.SetupRouter(router, configCors, app)
 	startServer(router, app.Config)
 }
 
