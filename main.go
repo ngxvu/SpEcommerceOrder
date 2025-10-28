@@ -24,6 +24,10 @@ func main() {
 		return
 	}
 
+	// Initialize Kafka
+	//kafkaApp := bootstrap.InitializeKafka()
+	//defer kafkaApp.Producer.Writer.Close()
+
 	logger.SetupLogger()
 
 	// Setup and start server

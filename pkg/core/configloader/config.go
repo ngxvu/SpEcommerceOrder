@@ -23,6 +23,9 @@ type Config struct {
 	JWTRefreshSecure    string `env:"JWT_REFRESH_SECURE"`
 	JWTAccessTimeMinute string `env:"JWT_ACCESS_TIME_MINUTE" envDefault:"15"`
 	JWTRefreshTimeHour  string `env:"JWT_REFRESH_TIME_HOUR" envDefault:"168"`
+
+	KafkaBrokers    string `env:"KAFKA_BROKERS"`
+	KafkaTopicOrder string `env:"KAFKA_TOPIC_ORDER"`
 }
 
 var (
