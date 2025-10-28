@@ -1,6 +1,11 @@
 package common
 
+// Use for logic domain constants
 const (
-	APPNAME          = "base"
-	HeaderXRequestID = "x-request-id"
+	PublishDraft     = "draft"
+	PublishPublished = "published"
+
+	InventoryInStock    = "in stock"
+	InventoryOutOfStock = "out of stock"
+	InventoryLowStock   = "low stock"
 )

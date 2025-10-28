@@ -1,13 +1,9 @@
 package pg_gorm
 
 import (
+	"basesource/pkg/http/utils"
 	"context"
 	"gorm.io/gorm"
-	"time"
-)
-
-const (
-	generalQueryTimeout = 60 * time.Second
 )
 
 type RepoPG struct {
@@ -29,6 +25,6 @@ func (r *RepoPG) GetRepo() *gorm.DB {
 }
 
 func (r *RepoPG) DBWithTimeout(ctx context.Context) (*gorm.DB, context.CancelFunc) {
-	ctx, cancel := context.WithTimeout(ctx, generalQueryTimeout)
+	ctx, cancel := context.WithTimeout(ctx, utils.GeneralQueryTimeout)
 	return r.db.WithContext(ctx), cancel
 }

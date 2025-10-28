@@ -1,10 +1,9 @@
 package utils
 
-const (
-	PublishDraft     = "draft"
-	PublishPublished = "published"
+import "time"
 
-	InventoryInStock    = "in stock"
-	InventoryOutOfStock = "out of stock"
-	InventoryLowStock   = "low stock"
+const (
+	APPNAME             = "base"
+	HeaderXRequestID    = "x-request-id"
+	GeneralQueryTimeout = 60 * time.Second
 )
