@@ -22,10 +22,9 @@ func ApplicationV1Router(
 		// Migrations
 		MigrateRoutes(routerV1, handlers2.NewMigrationHandler(newPgRepo))
 
-		// Auth for User
-		authUserRepo := repositories.NewAuthUserRepository(newPgRepo)
-		authUserService := services.NewAuthUserService(authUserRepo, newPgRepo)
-		AuthorizationUserRoutes(routerV1, handlers2.NewAuthUserHandler(newPgRepo, authUserService))
+		orderRepo := repo.NewOrderRepository(newPgRepo)
+		orderService := services.NewOrderService(orderRepo, newPgRepo)
+		OrderRoutes(routerV1, handlers2.NewOrderHandler(newPgRepo, orderService))
 	}
 }
 
@@ -36,10 +35,9 @@ func MigrateRoutes(router *gin.RouterGroup, handler *handlers2.MigrationHandler)
 	}
 }
 
-func AuthorizationUserRoutes(router *gin.RouterGroup, handler *handlers2.AuthUserHandler) {
-	routerAuth := router.Group("/auth")
+func OrderRoutes(router *gin.RouterGroup, handler *handlers2.OrderHandler) {
+	routerOrder := router.Group("/orders")
 	{
-		routerAuth.POST("/login", handler.Login)
-		routerAuth.POST("/register", handler.Register)
+		routerOrder.POST("/", handler.CreateOrder)
 	}
 }

@@ -1,4 +1,4 @@
-package handlers
+package http
 
 import (
 	"github.com/gin-gonic/gin"
@@ -40,7 +40,10 @@ func (m *MigrationHandler) BaseMigratePublic(ctx *gin.Context, tx *gorm.DB) erro
 	}
 
 	models := []interface{}{
-		&model.User{},
+		&model.Order{},
+		&model.OrderItem{},
+		&model.PromotionReward{},
+		&model.PromotionConfig{},
 	}
 
 	tx.Config.NamingStrategy = schema.NamingStrategy{
