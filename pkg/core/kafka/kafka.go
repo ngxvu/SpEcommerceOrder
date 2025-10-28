@@ -13,14 +13,6 @@ func NewWriter(brokers, topic string) *kafka.Writer {
 	}
 }
 
-func NewReader(brokers, topic, groupID string) *kafka.Reader {
-	return kafka.NewReader(kafka.ReaderConfig{
-		Brokers: strings.Split(brokers, ","),
-		Topic:   topic,
-		GroupID: groupID,
-	})
-}
-
 func Close(writer *kafka.Writer, reader *kafka.Reader) {
 	if writer != nil {
 		writer.Close()
