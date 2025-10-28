@@ -2,7 +2,7 @@ package handlers
 
 import (
 	model "basesource/internal/models"
-	repo "basesource/internal/repo/pg-gorm"
+	repo "basesource/internal/repositories/pg-gorm"
 	"basesource/pkg/core/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/go-gormigrate/gormigrate/v2"

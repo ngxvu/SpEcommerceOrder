@@ -3,9 +3,9 @@ package jwt
 import (
 	"basesource/conf"
 	model "basesource/internal/models"
-	"basesource/internal/utils"
-	"basesource/internal/utils/app_errors"
 	"basesource/pkg/core/logger"
+	"basesource/pkg/http/utils"
+	"basesource/pkg/http/utils/app_errors"
 	"context"
 	"github.com/golang-jwt/jwt/v4"
 	"strconv"

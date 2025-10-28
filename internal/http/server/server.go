@@ -1,9 +1,9 @@
-package route
+package server
 
 import (
-	"basesource/internal/handlers"
-	"basesource/internal/repo"
-	pgGorm "basesource/internal/repo/pg-gorm"
+	handlers2 "basesource/internal/http/handlers"
+	"basesource/internal/repositories"
+	pgGorm "basesource/internal/repositories/pg-gorm"
 	"basesource/internal/services"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
@@ -20,23 +20,23 @@ func ApplicationV1Router(
 		routerV1.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 		// Migrations
-		MigrateRoutes(routerV1, handlers.NewMigrationHandler(newPgRepo))
+		MigrateRoutes(routerV1, handlers2.NewMigrationHandler(newPgRepo))
 
 		// Auth for User
-		authUserRepo := repo.NewAuthUserRepository(newPgRepo)
+		authUserRepo := repositories.NewAuthUserRepository(newPgRepo)
 		authUserService := services.NewAuthUserService(authUserRepo, newPgRepo)
-		AuthorizationUserRoutes(routerV1, handlers.NewAuthUserHandler(newPgRepo, authUserService))
+		AuthorizationUserRoutes(routerV1, handlers2.NewAuthUserHandler(newPgRepo, authUserService))
 	}
 }
 
-func MigrateRoutes(router *gin.RouterGroup, handler *handlers.MigrationHandler) {
+func MigrateRoutes(router *gin.RouterGroup, handler *handlers2.MigrationHandler) {
 	routerAuth := router.Group("/internal")
 	{
 		routerAuth.POST("/migrate", handler.Migrate)
 	}
 }
 
-func AuthorizationUserRoutes(router *gin.RouterGroup, handler *handlers.AuthUserHandler) {
+func AuthorizationUserRoutes(router *gin.RouterGroup, handler *handlers2.AuthUserHandler) {
 	routerAuth := router.Group("/auth")
 	{
 		routerAuth.POST("/login", handler.Login)

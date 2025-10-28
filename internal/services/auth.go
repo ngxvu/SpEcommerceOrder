@@ -2,19 +2,19 @@ package services
 
 import (
 	model "basesource/internal/models"
-	"basesource/internal/repo"
-	pgGorm "basesource/internal/repo/pg-gorm"
-	"basesource/internal/utils"
-	"basesource/internal/utils/app_errors"
-	"basesource/internal/utils/sync_ob"
+	"basesource/internal/repositories"
+	pgGorm "basesource/internal/repositories/pg-gorm"
 	jwt_user2 "basesource/pkg/core/jwt"
 	"basesource/pkg/core/logger"
+	"basesource/pkg/http/utils"
+	"basesource/pkg/http/utils/app_errors"
+	"basesource/pkg/http/utils/sync_ob"
 	"context"
 	"github.com/sirupsen/logrus"
 )
 
 type AuthUserService struct {
-	repo      repo.AuthUserRepoInterface
+	repo      repositories.AuthUserRepoInterface
 	newPgRepo pgGorm.PGInterface
 }
 
@@ -23,7 +23,7 @@ type AuthUserServiceInterface interface {
 	Register(ctx context.Context, request model.UserRegisterRequest) (*jwt_user2.JWTUserDataResponse, error)
 }
 
-func NewAuthUserService(repo repo.AuthUserRepoInterface, newRepo pgGorm.PGInterface) *AuthUserService {
+func NewAuthUserService(repo repositories.AuthUserRepoInterface, newRepo pgGorm.PGInterface) *AuthUserService {
 	return &AuthUserService{
 		repo:      repo,
 		newPgRepo: newRepo,

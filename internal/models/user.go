@@ -1,6 +1,8 @@
 package models
 
-import "basesource/internal/utils"
+import (
+	"basesource/pkg/http/utils"
+)
 
 type User struct {
 	BaseModel

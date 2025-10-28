@@ -2,9 +2,9 @@ package handlers
 
 import (
 	model "basesource/internal/models"
-	pgGorm "basesource/internal/repo/pg-gorm"
+	pgGorm "basesource/internal/repositories/pg-gorm"
 	"basesource/internal/services"
-	"basesource/internal/utils/app_errors"
+	"basesource/pkg/http/utils/app_errors"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )

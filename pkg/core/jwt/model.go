@@ -1,7 +1,7 @@
 package jwt
 
 import (
-	"basesource/internal/utils"
+	"basesource/pkg/http/utils"
 	"time"
 )
 

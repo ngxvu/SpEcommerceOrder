@@ -1,7 +1,7 @@
 package app_errors
 
 import (
-	"basesource/internal/utils"
+	"basesource/pkg/http/utils"
 	"errors"
 	"github.com/gin-gonic/gin"
 	"net/http"
