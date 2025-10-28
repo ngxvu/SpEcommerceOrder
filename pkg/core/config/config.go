@@ -3,7 +3,7 @@ package config
 import (
 	"basesource/conf"
 	repo "basesource/internal/repositories/pg-gorm"
-	"basesource/pkg/http/db"
+	"basesource/pkg/core/db"
 	"fmt"
 )
 

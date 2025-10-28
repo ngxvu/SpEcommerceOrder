@@ -2,11 +2,11 @@ package main
 
 import (
 	"basesource/conf"
+	"basesource/internal/http/routes"
 	"basesource/pkg/core/config"
 	"basesource/pkg/core/logger"
 	"basesource/pkg/http/common"
 	"basesource/pkg/http/middlewares"
-	"basesource/pkg/http/service/router"
 	"fmt"
 	limit "github.com/aviddiviner/gin-limit"
 	"github.com/gin-gonic/gin"
@@ -36,7 +36,7 @@ func main() {
 		return
 	}
 
-	router.SetupRouter(router, configCors, app)
+	routes.NewHTTPServer(router, configCors, app)
 	startServer(router, app.Config)
 }
 
