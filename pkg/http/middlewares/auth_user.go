@@ -1,7 +1,7 @@
 package middlewares
 
 import (
-	"basesource/conf"
+	"basesource/pkg/core/configloader"
 	"basesource/pkg/http/utils/app_errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -12,7 +12,7 @@ import (
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-		config := conf.GetConfig()
+		config := configloader.GetConfig()
 		JWTAccessSecure := config.JWTAccessSecure
 		authHeader := c.GetHeader("Authorization")
 		signature := []byte(JWTAccessSecure)

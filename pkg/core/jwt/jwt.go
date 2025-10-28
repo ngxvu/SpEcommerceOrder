@@ -1,8 +1,8 @@
 package jwt
 
 import (
-	"basesource/conf"
 	model "basesource/internal/models"
+	"basesource/pkg/core/configloader"
 	"basesource/pkg/core/logger"
 	"basesource/pkg/http/utils"
 	"basesource/pkg/http/utils/app_errors"
@@ -31,7 +31,7 @@ func GenerateJWTTokenUser(context context.Context,
 
 	log := logger.WithCtx(context, "GenerateJWTTokenUser")
 
-	config := conf.GetConfig()
+	config := configloader.GetConfig()
 
 	JWTSecureKey := config.JWTAccessSecure
 	JWTExpTime := config.JWTAccessTimeMinute

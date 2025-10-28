@@ -1,20 +1,20 @@
-package config
+package bootstrap
 
 import (
-	"basesource/conf"
 	repo "basesource/internal/repositories/pg-gorm"
+	"basesource/pkg/core/configloader"
 	"basesource/pkg/core/db"
 	"fmt"
 )
 
 type App struct {
-	Config *conf.Config
+	Config *configloader.Config
 	PGRepo repo.PGInterface
 }
 
 // initializeApp initializes all application dependencies
 func InitializeApp() (*App, error) {
-	config := conf.GetConfig()
+	config := configloader.GetConfig()
 
 	// Initialize database
 	dbBackend, err := db.InitDatabase(config)

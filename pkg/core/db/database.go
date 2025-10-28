@@ -1,7 +1,7 @@
 package db
 
 import (
-	"basesource/conf"
+	"basesource/pkg/core/configloader"
 	"fmt"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -15,7 +15,7 @@ var (
 )
 
 // InitDatabase initializes and returns a singleton gorm database connection
-func InitDatabase(config *conf.Config) (*gorm.DB, error) {
+func InitDatabase(config *configloader.Config) (*gorm.DB, error) {
 	var err error
 	once.Do(func() {
 		dbInstance, err = initializeDatabase(config)
@@ -24,7 +24,7 @@ func InitDatabase(config *conf.Config) (*gorm.DB, error) {
 }
 
 // initializeDatabase creates and configures the database connection
-func initializeDatabase(config *conf.Config) (*gorm.DB, error) {
+func initializeDatabase(config *configloader.Config) (*gorm.DB, error) {
 	// Create connection string using environment config
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		config.PostgresHost, config.PostgresPort, config.PostgresUser, config.PostgresPassword, config.PostgresDatabase)

@@ -1,9 +1,9 @@
 package main
 
 import (
-	"basesource/conf"
+	"basesource/internal/bootstrap"
 	"basesource/internal/http/routes"
-	"basesource/pkg/core/config"
+	"basesource/pkg/core/configloader"
 	"basesource/pkg/core/logger"
 	"basesource/pkg/http/common"
 	"basesource/pkg/http/middlewares"
@@ -18,7 +18,7 @@ func main() {
 	logger.Init(common.APPNAME)
 
 	// Initialize application
-	app, err := config.InitializeApp()
+	app, err := bootstrap.InitializeApp()
 	if err != nil {
 		logger.LogError(logger.WithTag("Backend|Main"), err, "failed to initialize application")
 		return
@@ -40,7 +40,7 @@ func main() {
 	startServer(router, app.Config)
 }
 
-func startServer(router http.Handler, config *conf.Config) {
+func startServer(router http.Handler, config *configloader.Config) {
 
 	serverPort := fmt.Sprintf(":%s", config.ServerPort)
 	s := &http.Server{
