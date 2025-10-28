@@ -7,8 +7,8 @@ import (
 	"basesource/internal/utils"
 	"basesource/internal/utils/app_errors"
 	"basesource/internal/utils/sync_ob"
-	"basesource/pkg/http/logger"
-	"basesource/pkg/http/service/jwt_user"
+	jwt_user2 "basesource/pkg/core/jwt_user"
+	"basesource/pkg/core/logger"
 	"context"
 	"github.com/sirupsen/logrus"
 )
@@ -19,8 +19,8 @@ type AuthUserService struct {
 }
 
 type AuthUserServiceInterface interface {
-	Login(ctx context.Context, request model.UserLoginRequest) (*jwt_user.JWTUserDataResponse, error)
-	Register(ctx context.Context, request model.UserRegisterRequest) (*jwt_user.JWTUserDataResponse, error)
+	Login(ctx context.Context, request model.UserLoginRequest) (*jwt_user2.JWTUserDataResponse, error)
+	Register(ctx context.Context, request model.UserRegisterRequest) (*jwt_user2.JWTUserDataResponse, error)
 }
 
 func NewAuthUserService(repo repo.AuthUserRepoInterface, newRepo pgGorm.PGInterface) *AuthUserService {
@@ -30,7 +30,7 @@ func NewAuthUserService(repo repo.AuthUserRepoInterface, newRepo pgGorm.PGInterf
 	}
 }
 
-func (s *AuthUserService) Login(ctx context.Context, request model.UserLoginRequest) (*jwt_user.JWTUserDataResponse, error) {
+func (s *AuthUserService) Login(ctx context.Context, request model.UserLoginRequest) (*jwt_user2.JWTUserDataResponse, error) {
 	log := logger.WithTag("AuthUserService|Login")
 
 	tx, cancel := s.newPgRepo.DBWithTimeout(ctx)
@@ -60,7 +60,7 @@ func (s *AuthUserService) Login(ctx context.Context, request model.UserLoginRequ
 	return response, nil
 }
 
-func (s *AuthUserService) Register(ctx context.Context, request model.UserRegisterRequest) (*jwt_user.JWTUserDataResponse, error) {
+func (s *AuthUserService) Register(ctx context.Context, request model.UserRegisterRequest) (*jwt_user2.JWTUserDataResponse, error) {
 	log := logger.WithTag("AuthUserService|Register")
 
 	tx := s.newPgRepo.GetRepo().Begin()
@@ -110,28 +110,28 @@ func (s *AuthUserService) Register(ctx context.Context, request model.UserRegist
 	return response, nil
 }
 
-func (s *AuthUserService) generateTokensAndCreateResponse(ctx context.Context, user *model.User, log *logrus.Entry) (*jwt_user.JWTUserDataResponse, error) {
+func (s *AuthUserService) generateTokensAndCreateResponse(ctx context.Context, user *model.User, log *logrus.Entry) (*jwt_user2.JWTUserDataResponse, error) {
 
-	accessTokenClaims, err := jwt_user.GenerateJWTTokenUser(ctx, user.Role, "access")
+	accessTokenClaims, err := jwt_user2.GenerateJWTTokenUser(ctx, user.Role, "access")
 	if err != nil {
 		logger.LogError(log, err, "fail to generate access token")
 		return nil, app_errors.AppError(app_errors.StatusUnauthorized, app_errors.StatusUnauthorized)
 	}
 
-	refreshTokenClaims, err := jwt_user.GenerateJWTTokenUser(ctx, user.Role, "refresh")
+	refreshTokenClaims, err := jwt_user2.GenerateJWTTokenUser(ctx, user.Role, "refresh")
 	if err != nil {
 		logger.LogError(log, err, "fail to generate refresh token")
 		return nil, app_errors.AppError(app_errors.StatusUnauthorized, app_errors.StatusUnauthorized)
 	}
 
-	securityAuthenticatedUser := jwt_user.SecAuthUserMapper(user, accessTokenClaims, refreshTokenClaims)
+	securityAuthenticatedUser := jwt_user2.SecAuthUserMapper(user, accessTokenClaims, refreshTokenClaims)
 	if securityAuthenticatedUser == nil {
 		err = app_errors.AppError(app_errors.StatusUnauthorized, app_errors.StatusUnauthorized)
 		logger.LogError(log, err, "fail to map security authenticated user")
 		return nil, err
 	}
 
-	response := jwt_user.JWTUserDataResponse{
+	response := jwt_user2.JWTUserDataResponse{
 		Meta: utils.NewMetaData(ctx),
 		Data: *securityAuthenticatedUser,
 	}

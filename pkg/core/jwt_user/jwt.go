@@ -5,7 +5,7 @@ import (
 	model "basesource/internal/models"
 	"basesource/internal/utils"
 	"basesource/internal/utils/app_errors"
-	"basesource/pkg/http/logger"
+	"basesource/pkg/core/logger"
 	"context"
 	"github.com/golang-jwt/jwt/v4"
 	"strconv"
