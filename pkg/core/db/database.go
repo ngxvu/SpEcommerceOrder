@@ -1,11 +1,11 @@
 package db
 
 import (
-	"basesource/pkg/core/configloader"
 	"fmt"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"log"
+	"order/pkg/core/configloader"
 	"sync"
 )
 

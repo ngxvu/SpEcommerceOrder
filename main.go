@@ -1,17 +1,17 @@
 package main
 
 import (
-	"basesource/internal/bootstrap"
-	"basesource/internal/http/routes"
-	"basesource/pkg/core/configloader"
-	"basesource/pkg/core/logger"
-	"basesource/pkg/http/middlewares"
-	"basesource/pkg/http/utils"
 	"fmt"
 	limit "github.com/aviddiviner/gin-limit"
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
+	"order/internal/bootstrap"
+	"order/internal/http/routes"
+	"order/pkg/core/configloader"
+	"order/pkg/core/logger"
+	"order/pkg/http/middlewares"
+	"order/pkg/http/utils"
 )
 
 func main() {

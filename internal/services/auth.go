@@ -1,16 +1,16 @@
 package services
 
 import (
-	model "basesource/internal/models"
-	"basesource/internal/repositories"
-	pgGorm "basesource/internal/repositories/pg-gorm"
-	jwt_user2 "basesource/pkg/core/jwt"
-	"basesource/pkg/core/logger"
-	"basesource/pkg/http/utils"
-	"basesource/pkg/http/utils/app_errors"
-	"basesource/pkg/http/utils/sync_ob"
 	"context"
 	"github.com/sirupsen/logrus"
+	model "order/internal/models"
+	"order/internal/repositories"
+	pgGorm "order/internal/repositories/pg-gorm"
+	jwt_user2 "order/pkg/core/jwt"
+	"order/pkg/core/logger"
+	"order/pkg/http/utils"
+	"order/pkg/http/utils/app_errors"
+	"order/pkg/http/utils/sync_ob"
 )
 
 type AuthUserService struct {

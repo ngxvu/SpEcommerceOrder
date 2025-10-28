@@ -1,12 +1,12 @@
 package handlers
 
 import (
-	model "basesource/internal/models"
-	pgGorm "basesource/internal/repositories/pg-gorm"
-	"basesource/internal/services"
-	"basesource/pkg/http/utils/app_errors"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	model "order/internal/models"
+	pgGorm "order/internal/repositories/pg-gorm"
+	"order/internal/services"
+	"order/pkg/http/utils/app_errors"
 )
 
 type AuthUserHandler struct {

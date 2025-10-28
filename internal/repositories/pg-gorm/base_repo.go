@@ -1,9 +1,9 @@
 package pg_gorm
 
 import (
-	"basesource/pkg/http/utils"
 	"context"
 	"gorm.io/gorm"
+	"order/pkg/http/utils"
 )
 
 type RepoPG struct {

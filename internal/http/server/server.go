@@ -1,13 +1,13 @@
 package server
 
 import (
-	handlers2 "basesource/internal/http/handlers"
-	"basesource/internal/repositories"
-	pgGorm "basesource/internal/repositories/pg-gorm"
-	"basesource/internal/services"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	handlers2 "order/internal/http/handlers"
+	"order/internal/repositories"
+	pgGorm "order/internal/repositories/pg-gorm"
+	"order/internal/services"
 )
 
 func ApplicationV1Router(

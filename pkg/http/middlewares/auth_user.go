@@ -1,11 +1,11 @@
 package middlewares
 
 import (
-	"basesource/pkg/core/configloader"
-	"basesource/pkg/http/utils/app_errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
+	"order/pkg/core/configloader"
+	"order/pkg/http/utils/app_errors"
 	"strings"
 )
 

@@ -1,14 +1,14 @@
 package handlers
 
 import (
-	model "basesource/internal/models"
-	repo "basesource/internal/repositories/pg-gorm"
-	"basesource/pkg/core/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/go-gormigrate/gormigrate/v2"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 	"net/http"
+	model "order/internal/models"
+	repo "order/internal/repositories/pg-gorm"
+	"order/pkg/core/logger"
 )
 
 type MigrationHandler struct {

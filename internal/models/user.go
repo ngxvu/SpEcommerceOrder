@@ -1,7 +1,7 @@
 package models
 
 import (
-	"basesource/pkg/http/utils"
+	"order/pkg/http/utils"
 )
 
 type User struct {
