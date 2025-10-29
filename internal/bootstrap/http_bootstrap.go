@@ -7,7 +7,7 @@ import (
 	"order/pkg/core/configloader"
 )
 
-func StartServer(router http.Handler, config *configloader.Config) {
+func StartServer(router http.Handler, config *configloader.Config) (*http.Server, error) {
 
 	serverPort := fmt.Sprintf(":%s", config.ServerPort)
 	s := &http.Server{
@@ -19,4 +19,6 @@ func StartServer(router http.Handler, config *configloader.Config) {
 		_ = fmt.Errorf("failed to start server on port %s: %w", serverPort, err)
 		panic(err)
 	}
+
+	return s, nil
 }

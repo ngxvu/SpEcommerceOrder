@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"log"
 	"order/internal/grpc/handlers"
 	"order/internal/grpc/server"
 	repo "order/internal/repositories"
@@ -8,16 +9,27 @@ import (
 	"strconv"
 )
 
-func StartGRPC(app *App) {
-	grpcPort, _ := strconv.Atoi(app.config.GRPCPort)
+func StartGRPC(app *App) (*server.GRPCServer, error) {
+
+	grpcPort, err := strconv.Atoi(app.Config.GRPCPort)
+	if err != nil || grpcPort == 0 {
+		grpcPort = 50051
+	}
 
 	newPgRepo := app.PGRepo
 	orderRepo := repo.NewOrderRepository(newPgRepo)
 	orderService := services.NewOrderService(orderRepo, newPgRepo)
+
 	handler := handlers.NewOrderHandler(*orderService)
+
 	grpcServer := server.NewGRPCServer(handler)
 
-	if err := grpcServer.Run(grpcPort); err != nil {
-		panic(err)
-	}
+	go func() {
+		if err := grpcServer.Run(grpcPort); err != nil {
+			// choose appropriate logging/handling instead of panic in production
+			panic(err)
+		}
+	}()
+
+	return grpcServer, nil
 }
