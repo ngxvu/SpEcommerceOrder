@@ -40,10 +40,11 @@ func main() {
 
 	routes.NewHTTPServer(router, configCors, app)
 
+	httpSrv, httpErrCh := bootstrap.StartServer(router, app.Config)
+
 	go func() {
-		// start HTTP server in background so main can continue to start gRPC
-		if _, err := bootstrap.StartServer(router, app.Config); err != nil {
-			log.Fatalf("failed to start http server: %v", err)
+		if err := <-httpErrCh; err != nil {
+			log.Fatalf("http server error: %v", err)
 		}
 	}()
 
@@ -63,8 +64,13 @@ func main() {
 		grpcSrv.Stop()
 	}
 
-	// example: shutdown other servers with timeout
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	_ = shutdownCtx
+	// Shutdown HTTP server with timeout
+	if httpSrv != nil {
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := httpSrv.Shutdown(shutdownCtx); err != nil {
+			log.Printf("http shutdown error: %v", err)
+		}
+	}
+
 }

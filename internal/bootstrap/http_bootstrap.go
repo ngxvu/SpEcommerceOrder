@@ -7,18 +7,19 @@ import (
 	"order/pkg/core/configloader"
 )
 
-func StartServer(router http.Handler, config *configloader.Config) (*http.Server, error) {
+func StartServer(router http.Handler, cfg *configloader.Config) (*http.Server, <-chan error) {
 
-	serverPort := fmt.Sprintf(":%s", config.ServerPort)
-	s := &http.Server{
-		Addr:    serverPort,
-		Handler: router,
-	}
-	log.Println("Server started on port", serverPort)
-	if err := s.ListenAndServe(); err != nil {
-		_ = fmt.Errorf("failed to start server on port %s: %w", serverPort, err)
-		panic(err)
-	}
+	port := fmt.Sprintf(":%s", cfg.ServerPort)
+	s := &http.Server{Addr: port, Handler: router}
+	errCh := make(chan error, 1)
 
-	return s, nil
+	go func() {
+		log.Printf("HTTP server starting on %s", port)
+		if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			errCh <- err
+		}
+		close(errCh)
+	}()
+
+	return s, errCh
 }
