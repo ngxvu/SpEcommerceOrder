@@ -1,14 +1,10 @@
 package main
 
 import (
-	"fmt"
 	limit "github.com/aviddiviner/gin-limit"
 	"github.com/gin-gonic/gin"
-	"log"
-	"net/http"
 	"order/internal/bootstrap"
 	"order/internal/http/routes"
-	"order/pkg/core/configloader"
 	"order/pkg/core/logger"
 	"order/pkg/http/middlewares"
 	"order/pkg/http/utils"
@@ -41,19 +37,6 @@ func main() {
 	}
 
 	routes.NewHTTPServer(router, configCors, app)
-	startServer(router, app.Config)
-}
-
-func startServer(router http.Handler, config *configloader.Config) {
-
-	serverPort := fmt.Sprintf(":%s", config.ServerPort)
-	s := &http.Server{
-		Addr:    serverPort,
-		Handler: router,
-	}
-	log.Println("Server started on port", serverPort)
-	if err := s.ListenAndServe(); err != nil {
-		_ = fmt.Errorf("failed to start server on port %s: %w", serverPort, err)
-		panic(err)
-	}
+	bootstrap.StartServer(router, app.Config)
+	bootstrap.StartGRPC(app)
 }

@@ -26,6 +26,8 @@ type Config struct {
 
 	KafkaBrokers    string `env:"KAFKA_BROKERS"`
 	KafkaTopicOrder string `env:"KAFKA_TOPIC_ORDER"`
+
+	GRPCPort string `env:"GRPC_PORT" envDefault:"50051"`
 }
 
 var (

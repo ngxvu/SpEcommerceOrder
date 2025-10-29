@@ -1,17 +1,23 @@
 package bootstrap
 
-//import (
-//	"base-source/internal/grpc/handlers"
-//	"base-source/internal/grpc/server"
-//	"base-source/internal/services"
-//)
-//
-//func StartGRPC() {
-//	service := services.NewOrderService()
-//	handler := handlers.NewOrderHandler(service)
-//	grpcServer := server.New(handler)
-//
-//	if err := grpcServer.Run(50051); err != nil {
-//		panic(err)
-//	}
-//}
+import (
+	"order/internal/grpc/handlers"
+	"order/internal/grpc/server"
+	repo "order/internal/repositories"
+	"order/internal/services"
+	"strconv"
+)
+
+func StartGRPC(app *App) {
+	grpcPort, _ := strconv.Atoi(app.config.GRPCPort)
+
+	newPgRepo := app.PGRepo
+	orderRepo := repo.NewOrderRepository(newPgRepo)
+	orderService := services.NewOrderService(orderRepo, newPgRepo)
+	handler := handlers.NewOrderHandler(*orderService)
+	grpcServer := server.NewGRPCServer(handler)
+
+	if err := grpcServer.Run(grpcPort); err != nil {
+		panic(err)
+	}
+}
