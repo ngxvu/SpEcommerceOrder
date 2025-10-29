@@ -1,7 +1,7 @@
 package bootstrap
 
 import (
-	"log"
+	//"log"
 	"order/internal/grpc/handlers"
 	"order/internal/grpc/server"
 	repo "order/internal/repositories"
