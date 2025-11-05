@@ -28,6 +28,7 @@ type Config struct {
 	KafkaTopicOrder string `env:"KAFKA_TOPIC_ORDER"`
 
 	GRPCPort string `env:"GRPC_PORT" envDefault:"50051"`
+	HTTPPort string `env:"HTTP_PORT" envDefault:"8080"`
 }
 
 var (
