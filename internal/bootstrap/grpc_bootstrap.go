@@ -3,11 +3,15 @@ package bootstrap
 import (
 	"context"
 	"fmt"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	paymentclient "order/internal/clients/payment"
 	"order/internal/grpc/handlers"
 	"order/internal/grpc/server"
 	repo "order/internal/repositories"
 	"order/internal/services"
 	"strconv"
+	"time"
 )
 
 func StartGRPC(app *App) (*server.GRPCServer, error) {
@@ -26,7 +30,21 @@ func StartGRPC(app *App) (*server.GRPCServer, error) {
 
 	newPgRepo := app.PGRepo
 	orderRepo := repo.NewOrderRepository(newPgRepo)
-	orderService := services.NewOrderService(orderRepo, newPgRepo)
+	// create gRPC connection to payment service and build payment client
+	paymentAddr := app.Config.PaymentServiceAddr
+	if paymentAddr == "" {
+		paymentAddr = "payment-service:50051"
+	}
+
+	dialCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	conn, err := grpc.DialContext(dialCtx, paymentAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return nil, err
+	}
+	paymentClient := paymentclient.NewPaymentGRPCClient(conn)
+	orderService := services.NewOrderService(orderRepo, newPgRepo, paymentClient)
 	handler := handlers.NewOrderHandler(*orderService)
 
 	grpcServer := server.NewGRPCServer(handler, grpcAddr, httpAddr)
@@ -35,7 +53,6 @@ func StartGRPC(app *App) (*server.GRPCServer, error) {
 
 	go func() {
 		if err := grpcServer.Run(ctx); err != nil {
-			// choose appropriate logging/handling instead of panic in production
 			panic(err)
 		}
 	}()
