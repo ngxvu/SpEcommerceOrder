@@ -5,9 +5,7 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	handlers2 "order/internal/http/handlers"
-	"order/internal/repositories"
 	pgGorm "order/internal/repositories/pg-gorm"
-	"order/internal/services"
 )
 
 func ApplicationV1Router(
@@ -22,9 +20,9 @@ func ApplicationV1Router(
 		// Migrations
 		MigrateRoutes(routerV1, handlers2.NewMigrationHandler(newPgRepo))
 
-		orderRepo := repo.NewOrderRepository(newPgRepo)
-		orderService := services.NewOrderService(orderRepo, newPgRepo)
-		OrderRoutes(routerV1, handlers2.NewOrderHandler(newPgRepo, orderService))
+		//orderRepo := repo.NewOrderRepository(newPgRepo)
+		//orderService := services.NewOrderService(orderRepo, newPgRepo)
+		//OrderRoutes(routerV1, handlers2.NewOrderHandler(newPgRepo, orderService))
 	}
 }
 
