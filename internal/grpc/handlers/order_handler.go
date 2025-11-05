@@ -55,7 +55,10 @@ func (h *OrderHandler) CreateOrder(ctx context.Context, req *pbOrder.CreateOrder
 	}
 
 	grpcResponse := &pbOrder.CreateOrderResponse{
-		Message: createOrderResp.Data,
+		OrderId:     createOrderResp.Data.OrderID.String(),
+		CustomerId:  createOrderResp.Data.CustomerID.String(),
+		TotalAmount: createOrderResp.Data.TotalAmount,
+		Status:      createOrderResp.Data.Status,
 	}
 
 	return grpcResponse, nil

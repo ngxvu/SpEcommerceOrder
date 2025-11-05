@@ -34,6 +34,13 @@ type CreateOrderItemRequest struct {
 }
 
 type CreateOrderResponse struct {
-	Meta *utils.MetaData `json:"meta"`
-	Data string          `json:"data"`
+	Meta *utils.MetaData         `json:"meta"`
+	Data CreateOrderResponseData `json:"data"`
+}
+
+type CreateOrderResponseData struct {
+	OrderID     uuid.UUID `json:"order_id"`
+	CustomerID  uuid.UUID `json:"customer_id"`
+	TotalAmount float64   `json:"total_amount"`
+	Status      string    `json:"status"`
 }

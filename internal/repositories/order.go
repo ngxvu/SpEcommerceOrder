@@ -52,7 +52,12 @@ func (a *OrderRepository) CreateOrder(ctx context.Context, tx *gorm.DB, orderReq
 
 	response := &model.CreateOrderResponse{
 		Meta: utils.NewMetaData(ctx),
-		Data: "Order created successfully",
+		Data: model.CreateOrderResponseData{
+			OrderID:     orderRecord.ID,
+			CustomerID:  orderRecord.CustomerID,
+			TotalAmount: orderRecord.TotalAmount,
+			Status:      orderRecord.Status,
+		},
 	}
 
 	return response, nil
