@@ -18,7 +18,7 @@ func NewOrderHandler(newRepo repo.PGInterface, orderService *services.OrderServi
 	return &OrderHandler{newRepo: newRepo, orderService: orderService}
 }
 
-func (oS *OrderHandler) CreateOrder(ctx *gin.Context) {
+func (o *OrderHandler) CreateOrder(ctx *gin.Context) {
 	var requestCreateOrder model.CreateOrderRequest
 
 	err := ctx.ShouldBindJSON(&requestCreateOrder)
@@ -30,7 +30,7 @@ func (oS *OrderHandler) CreateOrder(ctx *gin.Context) {
 
 	context := ctx.Request.Context()
 
-	response, err := oS.orderService.CreateOrder(context, requestCreateOrder)
+	response, err := o.orderService.CreateOrder(context, requestCreateOrder)
 	if err != nil {
 		_ = ctx.Error(err)
 		return
