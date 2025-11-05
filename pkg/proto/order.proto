@@ -1,11 +1,18 @@
 syntax = "proto3";
 
 package order;
+
+import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 option go_package = "pkg/proto/orderpb";
 
 service OrderService {
-  rpc CreateOrder(CreateOrderRequest) returns (CreateOrderResponse);
+  rpc CreateOrder(CreateOrderRequest) returns (CreateOrderResponse) {
+    option (google.api.http) = {
+      post: "/v1/orders"
+      body: "*"
+    };
+  }
 }
 
 message CreateOrderRequest {
@@ -23,7 +30,6 @@ message OrderItem {
 }
 
 message CreateOrderResponse {
-  string order_id = 1;
   string message = 2;
 }
 
