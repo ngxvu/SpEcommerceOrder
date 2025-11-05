@@ -27,8 +27,12 @@ type Config struct {
 	KafkaBrokers    string `env:"KAFKA_BROKERS"`
 	KafkaTopicOrder string `env:"KAFKA_TOPIC_ORDER"`
 
+	// gRPC and HTTP ports
 	GRPCPort string `env:"GRPC_PORT" envDefault:"50051"`
 	HTTPPort string `env:"HTTP_PORT" envDefault:"8080"`
+
+	// Payment service address
+	PaymentServiceAddr string `env:"PAYMENT_SERVICE_ADDR" envDefault:"localhost:50052"`
 }
 
 var (
