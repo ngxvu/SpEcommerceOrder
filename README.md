@@ -7,7 +7,6 @@ to start grpc run
 protoc --go_out=. --go-grpc_out=. pkg/proto/order.proto
 ```
 
-
 [//]: # (proxy | with windows powershell)
 ```bash
 protoc -I. -Ipkg/proto `
