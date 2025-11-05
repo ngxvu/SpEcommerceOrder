@@ -4,7 +4,7 @@ package order;
 
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
-option go_package = "pkg/proto/orderpb";
+option go_package = "pkg/proto/orderpb;orderpb";
 
 service OrderService {
   rpc CreateOrder(CreateOrderRequest) returns (CreateOrderResponse) {
@@ -30,7 +30,10 @@ message OrderItem {
 }
 
 message CreateOrderResponse {
-  string message = 2;
+  string order_id = 1;
+  string customer_id = 2;
+  double total_amount = 3;
+  string status = 4;
 }
 
 enum OrderStatus {
