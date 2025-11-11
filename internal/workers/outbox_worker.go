@@ -3,24 +3,24 @@ package workers
 import (
 	"context"
 	"encoding/json"
-	"log"
-	"time"
-
-	model "order/internal/models"
-	"order/internal/repositories/pg-gorm"
-	pbPayment "order/pkg/proto/paymentpb"
-
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
+	"log"
+	paymentclient "order/internal/clients/payment"
+	model "order/internal/models"
+	repo "order/internal/repositories/pg-gorm"
+	pbPayment "order/pkg/proto/paymentpb"
+	"time"
 )
 
 type OutboxWorker struct {
-	pg       pgGorm.PGInterface
+	pg       repo.PGInterface
 	payment  paymentclient.PaymentClient
 	interval time.Duration
 	limit    int
 }
 
-func NewOutboxWorker(pg pgGorm.PGInterface, pay paymentclient.PaymentClient) *OutboxWorker {
+func NewOutboxWorker(pg repo.PGInterface, pay paymentclient.PaymentClient) *OutboxWorker {
 	return &OutboxWorker{
 		pg:       pg,
 		payment:  pay,
@@ -45,12 +45,17 @@ func (w *OutboxWorker) Run(ctx context.Context) {
 }
 
 func (w *OutboxWorker) processBatch(ctx context.Context) error {
-	db := w.pg.GetRepo()
+
+	tx, cancel := w.pg.DBWithTimeout(ctx)
+	if cancel != nil {
+		defer cancel()
+	}
+
 	now := time.Now()
 
 	var outs []model.Outbox
 	// select pending or retry rows that are due
-	if err := db.Where("status IN ? AND next_attempt_at <= ?", []model.OutboxStatus{model.OutboxStatusPending, model.OutboxStatusRetry}, now).
+	if err := tx.Where("status IN ? AND next_attempt_at <= ?", []model.OutboxStatus{model.OutboxStatusPending, model.OutboxStatusRetry}, now).
 		Order("next_attempt_at").
 		Limit(w.limit).
 		Find(&outs).Error; err != nil {
@@ -59,10 +64,10 @@ func (w *OutboxWorker) processBatch(ctx context.Context) error {
 
 	for _, o := range outs {
 		// attempt delivery in transaction to handle concurrent workers safely
-		if err := db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Transaction(func(tx *gorm.DB) error {
 			// reload row FOR UPDATE
-			var row model.Outbox
-			if err := tx.Clauses(gorm.Locking{Strength: "UPDATE"}).Where("id = ?", o.ID).First(&row).Error; err != nil {
+			var row model.OutboxEvent
+			if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ?", o.ID).First(&row).Error; err != nil {
 				return err
 			}
 			// skip if already done by another worker

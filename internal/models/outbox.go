@@ -43,6 +43,7 @@ type OutboxEvent struct {
 	Status        OutboxStatus    `json:"status"`
 	Attempts      int             `json:"attempts"`
 	NextAttemptAt time.Time       `json:"next_attempt_at"`
+	ProcessedAt   *time.Time      `json:"processed_at"`
 }
 
 // BeforeCreate sets defaults

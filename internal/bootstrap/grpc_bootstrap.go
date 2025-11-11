@@ -10,6 +10,7 @@ import (
 	"order/internal/grpc/server"
 	repo "order/internal/repositories"
 	"order/internal/services"
+	workers "order/internal/workers"
 	"strconv"
 	"time"
 )
@@ -31,6 +32,7 @@ func StartGRPC(app *App) (*server.GRPCServer, error) {
 	newPgRepo := app.PGRepo
 	orderRepo := repo.NewOrderRepository(newPgRepo)
 	outboxRepo := repo.NewOutboxRepository(newPgRepo)
+
 	// create gRPC connection to payment service and build payment client
 	paymentAddr := app.Config.PaymentServiceAddr
 	if paymentAddr == "" {
@@ -49,6 +51,8 @@ func StartGRPC(app *App) (*server.GRPCServer, error) {
 	handler := handlers.NewOrderHandler(*orderService)
 
 	grpcServer := server.NewGRPCServer(handler, grpcAddr, httpAddr)
+
+	_ = workers.NewOutboxWorker(newPgRepo, paymentClient)
 
 	ctx := context.Background()
 
