@@ -54,7 +54,7 @@ func (w *OutboxWorker) processBatch(ctx context.Context) error {
 	now := time.Now()
 
 	var outs []model.Outbox
-	// select pending or retry rows that are due
+	// select PENDING or RETRY rows that are due
 	if err := tx.Where("status IN ? AND next_attempt_at <= ?", []model.OutboxStatus{model.OutboxStatusPending, model.OutboxStatusRetry}, now).
 		Order("next_attempt_at").
 		Limit(w.limit).
@@ -66,7 +66,7 @@ func (w *OutboxWorker) processBatch(ctx context.Context) error {
 		// attempt delivery in transaction to handle concurrent workers safely
 		if err := tx.Transaction(func(tx *gorm.DB) error {
 			// reload row FOR UPDATE
-			var row model.OutboxEvent
+			var row model.Outbox
 			if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ?", o.ID).First(&row).Error; err != nil {
 				return err
 			}

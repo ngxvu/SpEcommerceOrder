@@ -8,16 +8,16 @@ import (
 	"order/internal/repositories"
 	pgGorm "order/internal/repositories/pg-gorm"
 	"order/pkg/core/logger"
-	"order/pkg/http/utils"
 	"order/pkg/http/utils/app_errors"
+	"order/pkg/proto/paymentpb"
 	"time"
 )
 
 type OrderService struct {
-	repo      repo.OrderRepoInterface
-	newPgRepo pgGorm.PGInterface
-	payment   paymentclient.PaymentClient
-	outbox    *repo.OutboxRepository
+	repo       repo.OrderRepoInterface
+	newPgRepo  pgGorm.PGInterface
+	payment    paymentclient.PaymentClient
+	outboxRepo *repo.OutboxRepository
 }
 
 type OrderServiceInterface interface {
@@ -31,10 +31,10 @@ func NewOrderService(
 	outbox *repo.OutboxRepository,
 ) *OrderService {
 	return &OrderService{
-		repo:      repo,
-		newPgRepo: newRepo,
-		payment:   payment,
-		outbox:    outbox,
+		repo:       repo,
+		newPgRepo:  newRepo,
+		payment:    payment,
+		outboxRepo: outbox,
 	}
 }
 
@@ -51,31 +51,33 @@ func (oS *OrderService) CreateOrder(ctx context.Context, orderRequest model.Crea
 		return nil, app_errors.AppError(app_errors.StatusInternalServerError, "create order failed")
 	}
 
-	b, err := json.Marshal(createOrderResp)
-	if err != nil {
-		logger.LogError(log, err, "failed to marshal create order response")
-		return nil, app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
+	payReq := &paymentpb.PayRequest{
+		OrderId: createOrderResp.Data.OrderID.String(),
+		Amount:  createOrderResp.Data.TotalAmount,
 	}
 
-	outbox := &model.OutboxEvent{
+	bs, _ := json.Marshal(payReq)
+
+	outbox := &model.Outbox{
 		AggregateType: "order",
 		AggregateID:   createOrderResp.Data.OrderID,
 		EventType:     "payment_required",
-		Payload:       json.RawMessage(b),
+		Payload:       string(bs),
 		Status:        model.OutboxStatusPending,
 		Attempts:      0,
 		NextAttemptAt: time.Now(),
 	}
 
-	err = oS.outbox.CreateOutBox(ctx, tx, outbox)
-	if err != nil {
-		logger.LogError(log, err, "failed to create outbox")
-		return nil, app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
+	// write outboxRepo in same tx so it's transactional with order creation
+	if err := oS.outboxRepo.CreateOutbox(ctx, tx, outbox); err != nil {
+		logger.LogError(log, err, "failed to create outboxRepo")
+		return nil, app_errors.AppError(app_errors.StatusInternalServerError, "create outboxRepo failed")
 	}
 
+	// commit tx and return (no synchronous payment call)
 	if err := tx.Commit().Error; err != nil {
 		logger.LogError(log, err, "failed to commit tx")
-		return nil, app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
+		return nil, app_errors.AppError(app_errors.StatusInternalServerError, "commit failed")
 	}
 
 	return createOrderResp, nil
