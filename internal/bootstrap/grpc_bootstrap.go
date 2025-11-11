@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	paymentclient "order/internal/clients/payment"
-	"order/internal/grpc/handlers"
-	"order/internal/grpc/server"
-	repo "order/internal/repositories"
-	"order/internal/services"
+	paymentclient "order_service/internal/clients/payment"
+	"order_service/internal/grpc/handlers"
+	"order_service/internal/grpc/server"
+	repo "order_service/internal/repositories"
+	"order_service/internal/services"
 	"strconv"
 	"time"
 )
@@ -30,6 +30,7 @@ func StartGRPC(app *App) (*server.GRPCServer, error) {
 
 	newPgRepo := app.PGRepo
 	orderRepo := repo.NewOrderRepository(newPgRepo)
+	outboxRepo := repo.NewOutboxRepository(newPgRepo)
 	// create gRPC connection to payment service and build payment client
 	paymentAddr := app.Config.PaymentServiceAddr
 	if paymentAddr == "" {
@@ -44,7 +45,7 @@ func StartGRPC(app *App) (*server.GRPCServer, error) {
 		return nil, err
 	}
 	paymentClient := paymentclient.NewPaymentGRPCClient(conn)
-	orderService := services.NewOrderService(orderRepo, newPgRepo, paymentClient)
+	orderService := services.NewOrderService(orderRepo, newPgRepo, paymentClient, outboxRepo)
 	handler := handlers.NewOrderHandler(*orderService)
 
 	grpcServer := server.NewGRPCServer(handler, grpcAddr, httpAddr)
