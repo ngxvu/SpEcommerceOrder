@@ -5,9 +5,9 @@ import (
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"order/internal/models"
-	"order/internal/services"
-	pbOrder "order/pkg/proto"
+	"order_service/internal/models"
+	"order_service/internal/services"
+	pbOrder "order_service/pkg/proto"
 )
 
 type OrderHandler struct {

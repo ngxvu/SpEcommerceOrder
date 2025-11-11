@@ -2,19 +2,21 @@ package services
 
 import (
 	"context"
-	paymentclient "order/internal/clients/payment"
-	model "order/internal/models"
-	"order/internal/repositories"
-	pgGorm "order/internal/repositories/pg-gorm"
-	"order/pkg/core/logger"
-	"order/pkg/http/utils/app_errors"
-	pbPayment "order/pkg/proto/paymentpb"
+	"encoding/json"
+	paymentclient "order_service/internal/clients/payment"
+	model "order_service/internal/models"
+	"order_service/internal/repositories"
+	pgGorm "order_service/internal/repositories/pg-gorm"
+	"order_service/pkg/core/logger"
+	"order_service/pkg/http/utils"
+	"order_service/pkg/http/utils/app_errors"
 )
 
 type OrderService struct {
 	repo      repo.OrderRepoInterface
 	newPgRepo pgGorm.PGInterface
 	payment   paymentclient.PaymentClient
+	outbox    *repo.OutboxRepository
 }
 
 type OrderServiceInterface interface {
@@ -25,11 +27,13 @@ func NewOrderService(
 	repo repo.OrderRepoInterface,
 	newRepo pgGorm.PGInterface,
 	payment paymentclient.PaymentClient,
+	outbox *repo.OutboxRepository,
 ) *OrderService {
 	return &OrderService{
 		repo:      repo,
 		newPgRepo: newRepo,
 		payment:   payment,
+		outbox:    outbox,
 	}
 }
 
@@ -39,26 +43,35 @@ func (oS *OrderService) CreateOrder(ctx context.Context, orderRequest model.Crea
 	tx := oS.newPgRepo.GetRepo().Begin()
 	defer tx.Rollback()
 
-	createOrderResponse, err := oS.repo.CreateOrder(ctx, tx, &orderRequest)
+	// Create order in DB
+	createOrderResp, err := oS.repo.CreateOrder(ctx, tx, &orderRequest)
 	if err != nil {
 		logger.LogError(log, err, "failed to create order")
-		err = app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
-		return nil, err
+		return nil, app_errors.AppError(app_errors.StatusInternalServerError, "create order failed")
 	}
 
-	tx.Commit()
-
-	payReq := &pbPayment.PayRequest{
-		OrderId:    createOrderResponse.Data.OrderID.String(),
-		CustomerId: createOrderResponse.Data.CustomerID.String(),
-		Amount:     createOrderResponse.Data.TotalAmount,
-		Status:     createOrderResponse.Data.Status,
-	}
-	_, err = oS.payment.Pay(ctx, payReq)
+	b, err := json.Marshal(createOrderResp)
 	if err != nil {
-		logger.LogError(log, err, "failed to process payment")
-		err = app_errors.AppError(app_errors.StatusInternalServerError, "payment processing failed")
+		logger.LogError(log, err, "failed to marshal create order response")
+		return nil, app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
 	}
 
-	return createOrderResponse, nil
+	outboxEvent := &model.OutboxEvent{
+		EventType: utils.OrderCreated,
+		Payload:   json.RawMessage(b),
+		Process:   false,
+	}
+
+	err = oS.outbox.CreateOutBox(ctx, tx, outboxEvent)
+	if err != nil {
+		logger.LogError(log, err, "failed to create outbox")
+		return nil, app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		logger.LogError(log, err, "failed to commit tx")
+		return nil, app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
+	}
+
+	return createOrderResp, nil
 }
