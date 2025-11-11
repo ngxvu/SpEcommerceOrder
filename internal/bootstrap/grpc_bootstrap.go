@@ -52,9 +52,10 @@ func StartGRPC(app *App) (*server.GRPCServer, error) {
 
 	grpcServer := server.NewGRPCServer(handler, grpcAddr, httpAddr)
 
-	_ = workers.NewOutboxWorker(newPgRepo, paymentClient)
-
+	// start outbox worker properly (was previously discarded with `_ = ...`)
 	ctx := context.Background()
+	worker := workers.NewOutboxWorker(newPgRepo, paymentClient)
+	go worker.Run(ctx)
 
 	go func() {
 		if err := grpcServer.Run(ctx); err != nil {
