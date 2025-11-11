@@ -2,7 +2,7 @@ package models
 
 import (
 	"github.com/google/uuid"
-	"order/pkg/http/utils"
+	"order_service/pkg/http/utils"
 )
 
 type Order struct {
