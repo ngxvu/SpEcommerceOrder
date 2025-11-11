@@ -28,9 +28,15 @@ func (o *OutboxRepository) CreateOutBox(ctx context.Context, tx *gorm.DB, outbox
 	}
 
 	outBoxData := map[string]interface{}{
-		"event_type": outboxEvent.EventType,
-		"payload":    outboxEvent.Payload,
-		"process":    outboxEvent.Process,
+		"event_type":      outboxEvent.EventType,
+		"payload":         outboxEvent.Payload,
+		"process":         outboxEvent.Process,
+		"aggregate_type":  outboxEvent.AggregateType,
+		"aggregate_id":    outboxEvent.AggregateID,
+		"status":          outboxEvent.Status,
+		"attempts":        outboxEvent.Attempts,
+		"next_attempt_at": outboxEvent.NextAttemptAt,
+		"processed_at":    outboxEvent.ProcessedAt,
 	}
 
 	if err := tx.Model(&models.Outbox{}).Create(outBoxData).Error; err != nil {
