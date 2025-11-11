@@ -3,13 +3,14 @@ package services
 import (
 	"context"
 	"encoding/json"
-	paymentclient "order_service/internal/clients/payment"
-	model "order_service/internal/models"
-	"order_service/internal/repositories"
-	pgGorm "order_service/internal/repositories/pg-gorm"
-	"order_service/pkg/core/logger"
-	"order_service/pkg/http/utils"
-	"order_service/pkg/http/utils/app_errors"
+	paymentclient "order/internal/clients/payment"
+	model "order/internal/models"
+	"order/internal/repositories"
+	pgGorm "order/internal/repositories/pg-gorm"
+	"order/pkg/core/logger"
+	"order/pkg/http/utils"
+	"order/pkg/http/utils/app_errors"
+	"time"
 )
 
 type OrderService struct {
@@ -56,13 +57,17 @@ func (oS *OrderService) CreateOrder(ctx context.Context, orderRequest model.Crea
 		return nil, app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
 	}
 
-	outboxEvent := &model.OutboxEvent{
-		EventType: utils.OrderCreated,
-		Payload:   json.RawMessage(b),
-		Process:   false,
+	outbox := &model.OutboxEvent{
+		AggregateType: "order",
+		AggregateID:   createOrderResp.Data.OrderID,
+		EventType:     "payment_required",
+		Payload:       json.RawMessage(b),
+		Status:        model.OutboxStatusPending,
+		Attempts:      0,
+		NextAttemptAt: time.Now(),
 	}
 
-	err = oS.outbox.CreateOutBox(ctx, tx, outboxEvent)
+	err = oS.outbox.CreateOutBox(ctx, tx, outbox)
 	if err != nil {
 		logger.LogError(log, err, "failed to create outbox")
 		return nil, app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)

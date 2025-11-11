@@ -3,8 +3,8 @@ package repo
 import (
 	"context"
 	"gorm.io/gorm"
-	models "order_service/internal/models"
-	pgGorm "order_service/internal/repositories/pg-gorm"
+	models "order/internal/models"
+	pgGorm "order/internal/repositories/pg-gorm"
 )
 
 type OutboxRepository struct {

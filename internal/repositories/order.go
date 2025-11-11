@@ -3,9 +3,9 @@ package repo
 import (
 	"context"
 	"gorm.io/gorm"
-	model "order_service/internal/models"
-	pgGorm "order_service/internal/repositories/pg-gorm"
-	"order_service/pkg/http/utils"
+	model "order/internal/models"
+	pgGorm "order/internal/repositories/pg-gorm"
+	"order/pkg/http/utils"
 )
 
 type OrderRepository struct {
