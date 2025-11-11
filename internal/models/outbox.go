@@ -48,9 +48,6 @@ type OutboxEvent struct {
 
 // BeforeCreate sets defaults
 func (o *Outbox) BeforeCreate(tx *gorm.DB) (err error) {
-	if o.ID == uuid.Nil {
-		o.ID = uuid.New()
-	}
 	if o.NextAttemptAt.IsZero() {
 		o.NextAttemptAt = time.Now()
 	}
