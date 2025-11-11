@@ -6,9 +6,9 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 	"net/http"
-	model "order/internal/models"
-	repo "order/internal/repositories/pg-gorm"
-	"order/pkg/core/logger"
+	model "order_service/internal/models"
+	repo "order_service/internal/repositories/pg-gorm"
+	"order_service/pkg/core/logger"
 )
 
 type MigrationHandler struct {
@@ -72,6 +72,13 @@ func (m *MigrationHandler) MigrateCmdPublic(ctx *gin.Context) {
 			ID: "20220523172948",
 			Migrate: func(tx *gorm.DB) error {
 				return m.BaseMigratePublic(ctx, tx)
+			},
+		},
+		{
+			ID: "20230523172948",
+			Migrate: func(tx *gorm.DB) error {
+				// Example migration: add a new column to the orders table
+				return tx.AutoMigrate(&model.Outbox{})
 			},
 		},
 	})

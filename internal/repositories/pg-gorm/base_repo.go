@@ -3,7 +3,7 @@ package pg_gorm
 import (
 	"context"
 	"gorm.io/gorm"
-	"order/pkg/http/utils"
+	"order_service/pkg/http/utils"
 )
 
 type RepoPG struct {
@@ -25,6 +25,7 @@ func (r *RepoPG) GetRepo() *gorm.DB {
 }
 
 func (r *RepoPG) DBWithTimeout(ctx context.Context) (*gorm.DB, context.CancelFunc) {
+	// init cancelable context with timeout
 	ctx, cancel := context.WithTimeout(ctx, utils.GeneralQueryTimeout)
 	return r.db.WithContext(ctx), cancel
 }

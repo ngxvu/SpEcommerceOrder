@@ -115,3 +115,9 @@ func ValidOperatorsMap() map[string]bool {
 	}
 	return operatorsMap
 }
+
+func ConvertStructToJsonb(in interface{}) (out postgres.Jsonb) {
+	b, _ := json.Marshal(in)
+	_ = out.Scan(b)
+	return out
+}

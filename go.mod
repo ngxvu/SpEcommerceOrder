@@ -1,4 +1,4 @@
-module order
+module order_service
 
 go 1.24.0
 

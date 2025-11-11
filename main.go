@@ -5,11 +5,11 @@ import (
 	limit "github.com/aviddiviner/gin-limit"
 	"github.com/gin-gonic/gin"
 	"log"
-	"order/internal/bootstrap"
-	"order/internal/http/routes"
-	"order/pkg/core/logger"
-	"order/pkg/http/middlewares"
-	"order/pkg/http/utils"
+	"order_service/internal/bootstrap"
+	"order_service/internal/http/routes"
+	"order_service/pkg/core/logger"
+	"order_service/pkg/http/middlewares"
+	"order_service/pkg/http/utils"
 	"os"
 	"os/signal"
 	"syscall"
@@ -72,5 +72,4 @@ func main() {
 			log.Printf("http shutdown error: %v", err)
 		}
 	}
-
 }

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
-	"order/pkg/core/configloader"
-	"order/pkg/http/utils/app_errors"
+	"order_service/pkg/core/configloader"
+	"order_service/pkg/http/utils/app_errors"
 	"strings"
 )
 

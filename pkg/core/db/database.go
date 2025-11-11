@@ -5,7 +5,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"log"
-	"order/pkg/core/configloader"
+	"order_service/pkg/core/configloader"
 	"sync"
 )
 

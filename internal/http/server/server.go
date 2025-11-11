@@ -4,8 +4,8 @@ import (
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	handlers2 "order/internal/http/handlers"
-	pgGorm "order/internal/repositories/pg-gorm"
+	handlers2 "order_service/internal/http/handlers"
+	pgGorm "order_service/internal/repositories/pg-gorm"
 )
 
 func ApplicationV1Router(

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"order/pkg/core/configloader"
+	"order_service/pkg/core/configloader"
 )
 
 func StartServer(router http.Handler, cfg *configloader.Config) (*http.Server, <-chan error) {
