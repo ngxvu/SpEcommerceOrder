@@ -2,7 +2,7 @@ package http
 
 import (
 	"github.com/gin-gonic/gin"
-	repo "order_service/internal/repositories/pg-gorm"
+	repo "order/internal/repositories/pg-gorm"
 )
 
 type PromotionHandler struct {

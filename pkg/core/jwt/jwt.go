@@ -3,11 +3,11 @@ package jwt
 import (
 	"context"
 	"github.com/golang-jwt/jwt/v4"
-	model "order_service/internal/models"
-	"order_service/pkg/core/configloader"
-	"order_service/pkg/core/logger"
-	"order_service/pkg/http/utils"
-	"order_service/pkg/http/utils/app_errors"
+	model "order/internal/models"
+	"order/pkg/core/configloader"
+	"order/pkg/core/logger"
+	"order/pkg/http/utils"
+	"order/pkg/http/utils/app_errors"
 	"strconv"
 	"time"
 )

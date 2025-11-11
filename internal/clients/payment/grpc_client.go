@@ -3,7 +3,7 @@ package paymentclient
 import (
 	"context"
 	"google.golang.org/grpc"
-	pbPayment "order_service/pkg/proto/paymentpb"
+	pbPayment "order/pkg/proto/paymentpb"
 )
 
 type PaymentGRPCClient struct {

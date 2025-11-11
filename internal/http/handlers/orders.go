@@ -3,10 +3,10 @@ package http
 import (
 	"github.com/gin-gonic/gin"
 	"net/http"
-	model "order_service/internal/models"
-	repo "order_service/internal/repositories/pg-gorm"
-	"order_service/internal/services"
-	"order_service/pkg/http/utils/app_errors"
+	model "order/internal/models"
+	repo "order/internal/repositories/pg-gorm"
+	"order/internal/services"
+	"order/pkg/http/utils/app_errors"
 )
 
 type OrderHandler struct {

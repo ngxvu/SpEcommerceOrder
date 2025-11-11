@@ -3,8 +3,8 @@ package bootstrap
 import (
 	"context"
 	"log"
-	"order_service/pkg/core/configloader"
-	"order_service/pkg/core/kafka"
+	"order/pkg/core/configloader"
+	"order/pkg/core/kafka"
 )
 
 type KafkaApp struct {

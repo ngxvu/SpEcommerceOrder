@@ -4,7 +4,7 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"net/http"
-	"order_service/pkg/http/utils"
+	"order/pkg/http/utils"
 )
 
 // Package app_errors defines the domain app_errors used in the application.

@@ -1,7 +1,7 @@
 package jwt
 
 import (
-	"order_service/pkg/http/utils"
+	"order/pkg/http/utils"
 	"time"
 )
 

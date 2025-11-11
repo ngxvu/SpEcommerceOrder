@@ -2,9 +2,9 @@ package bootstrap
 
 import (
 	"fmt"
-	repo "order_service/internal/repositories/pg-gorm"
-	"order_service/pkg/core/configloader"
-	"order_service/pkg/core/db"
+	repo "order/internal/repositories/pg-gorm"
+	"order/pkg/core/configloader"
+	"order/pkg/core/db"
 )
 
 type App struct {

@@ -3,7 +3,7 @@ package pg_gorm
 import (
 	"context"
 	"gorm.io/gorm"
-	"order_service/pkg/http/utils"
+	"order/pkg/http/utils"
 )
 
 type RepoPG struct {

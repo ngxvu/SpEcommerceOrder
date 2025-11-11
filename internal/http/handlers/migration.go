@@ -6,9 +6,9 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 	"net/http"
-	model "order_service/internal/models"
-	repo "order_service/internal/repositories/pg-gorm"
-	"order_service/pkg/core/logger"
+	model "order/internal/models"
+	repo "order/internal/repositories/pg-gorm"
+	"order/pkg/core/logger"
 )
 
 type MigrationHandler struct {

@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	pb "order_service/pkg/proto"
+	pb "order/pkg/proto"
 )
 
 type GRPCServer struct {

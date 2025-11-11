@@ -2,7 +2,7 @@ package paymentclient
 
 import (
 	"context"
-	pbPayment "order_service/pkg/proto/paymentpb"
+	pbPayment "order/pkg/proto/paymentpb"
 )
 
 type PaymentClient interface {
