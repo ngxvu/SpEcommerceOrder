@@ -19,10 +19,10 @@ const (
 
 type Outbox struct {
 	BaseModel
-	EventType     string          `json:"event_type" gorm:"type:varchar(100);index"`
+	EventType     string          `json:"event_type" gorm:"type:varchar(100);not null"`
 	Payload       *postgres.Jsonb `json:"payload" gorm:"type:jsonb"`
-	AggregateType string          `gorm:"size:100;not null"` // e.g. "order"
-	AggregateID   uuid.UUID       `gorm:"type:uuid;index"`   // order id
+	AggregateType string          `gorm:"size:100;not null"`
+	AggregateID   uuid.UUID       `gorm:"type:uuid;index"`
 	Status        OutboxStatus    `gorm:"size:20;not null;index"`
 	Attempts      int             `gorm:"not null;default:0"`
 	NextAttemptAt time.Time       `gorm:"index"`
