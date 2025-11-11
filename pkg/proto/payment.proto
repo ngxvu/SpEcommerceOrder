@@ -10,12 +10,6 @@ message PayRequest {
   string status = 4;
 }
 
-message Item {
-  string product_id = 1;
-  int32 quantity = 2;
-  int64 price_cents = 3;
-}
-
 message PayResponse {
   string message = 1;
   string payment_id = 2;
