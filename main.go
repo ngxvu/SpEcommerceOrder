@@ -9,6 +9,7 @@ import (
 	"order/internal/bootstrap"
 	"order/internal/http/routes"
 	"order/internal/metrics"
+	"order/internal/telemetry"
 	"order/pkg/core/logger"
 	"order/pkg/http/middlewares"
 	"order/pkg/http/utils"
@@ -23,7 +24,7 @@ func main() {
 
 	// initialize tracer early and keep cleanup for shutdown
 	ctx := context.Background()
-	cleanup, err := bootstrap.InitTracer(ctx, utils.APPNAME)
+	cleanup, err := telemetry.InitTracer(ctx, utils.APPNAME)
 	if err != nil {
 		logger.LogError(logger.WithTag("Backend|Main"), err, "failed to initialize tracer")
 		return
@@ -31,6 +32,7 @@ func main() {
 	// ensure tracer provider shutdown on process exit
 	defer func() { _ = cleanup(context.Background()) }()
 
+	// start prometheus metrics endpoint (scraped at service:9090/metrics)
 	go StartMetricsServer(":9090")
 
 	// Initialize application
