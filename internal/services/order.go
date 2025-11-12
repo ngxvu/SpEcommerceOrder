@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"github.com/google/uuid"
 	paymentclient "order/internal/clients/payment"
 	model "order/internal/models"
 	"order/internal/repositories"
@@ -52,16 +53,19 @@ func (oS *OrderService) CreateOrder(ctx context.Context, orderRequest model.Crea
 	}
 
 	payReq := &paymentpb.PayRequest{
-		OrderId: createOrderResp.Data.OrderID.String(),
-		Amount:  createOrderResp.Data.TotalAmount,
+		OrderId:    createOrderResp.Data.OrderID.String(),
+		CustomerId: createOrderResp.Data.CustomerID.String(),
+		Amount:     createOrderResp.Data.TotalAmount,
+		Status:     createOrderResp.Data.Status,
 	}
 
 	bs, _ := json.Marshal(payReq)
 
 	outbox := &model.Outbox{
+		EventID:       uuid.New(),
+		EventType:     "payment_required",
 		AggregateType: "order",
 		AggregateID:   createOrderResp.Data.OrderID,
-		EventType:     "payment_required",
 		Payload:       string(bs),
 		Status:        model.OutboxStatusPending,
 		Attempts:      0,

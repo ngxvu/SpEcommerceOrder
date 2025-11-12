@@ -30,6 +30,7 @@ func NewOutboxWorker(pg repo.PGInterface, pay paymentclient.PaymentClient) *Outb
 }
 
 func (w *OutboxWorker) Run(ctx context.Context) {
+
 	ticker := time.NewTicker(w.interval)
 	defer ticker.Stop()
 	for {
@@ -55,7 +56,10 @@ func (w *OutboxWorker) processBatch(ctx context.Context) error {
 
 	var outs []model.Outbox
 	// select PENDING or RETRY rows that are due
-	if err := tx.Where("status IN ? AND next_attempt_at <= ?", []model.OutboxStatus{model.OutboxStatusPending, model.OutboxStatusRetry}, now).
+	if err := tx.Where("status IN ? AND next_attempt_at <= ? AND attempts <= ?",
+		[]model.OutboxStatus{model.OutboxStatusPending, model.OutboxStatusRetry},
+		now,
+		model.NumberOfAttempts).
 		Order("next_attempt_at").
 		Limit(w.limit).
 		Find(&outs).Error; err != nil {
@@ -63,6 +67,7 @@ func (w *OutboxWorker) processBatch(ctx context.Context) error {
 	}
 
 	for _, o := range outs {
+
 		// attempt delivery in transaction to handle concurrent workers safely
 		if err := tx.Transaction(func(tx *gorm.DB) error {
 			// reload row FOR UPDATE
@@ -84,6 +89,9 @@ func (w *OutboxWorker) processBatch(ctx context.Context) error {
 				row.ProcessedAt = &now
 				return tx.Save(&row).Error
 			}
+
+			// set EventID in request for idempotency
+			payReq.EventId = row.EventID.String()
 
 			// call payment service
 			_, err := w.payment.Pay(ctx, &payReq)
