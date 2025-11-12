@@ -4,10 +4,11 @@ package paymentpb;
 option go_package = "pkg/proto/paymentpb";
 
 message PayRequest {
-  string order_id = 1;
-  string customer_id = 2;
-  double  amount = 3;
-  string status = 4;
+  string event_id = 1; // event identifier use for idempotency
+  string order_id = 2;
+  string customer_id = 3;
+  double  amount = 4;
+  string status = 5;
 }
 
 message PayResponse {
