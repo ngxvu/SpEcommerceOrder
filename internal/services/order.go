@@ -4,6 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	paymentclient "order/internal/clients/payment"
 	model "order/internal/models"
 	"order/internal/repositories"
@@ -40,16 +44,30 @@ func NewOrderService(
 }
 
 func (oS *OrderService) CreateOrder(ctx context.Context, orderRequest model.CreateOrderRequest) (*model.CreateOrderResponse, error) {
+
 	log := logger.WithTag("OrderService|CreateOrder")
 
+	tracer := otel.Tracer("order/service")
+	ctx, span := tracer.Start(ctx, "OrderService.CreateOrder",
+		trace.WithAttributes(attribute.String("customer_id", orderRequest.CustomerID.String())))
+	defer span.End()
+
+	span.AddEvent("begin tx")
 	tx := oS.newPgRepo.GetRepo().Begin()
 	defer tx.Rollback()
 
 	// Create order in DB
 	createOrderResp, err := oS.repo.CreateOrder(ctx, tx, &orderRequest)
 	if err != nil {
+		// tracer
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "create order failed")
+		return nil, err
+
+		err = app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
+		// logger
 		logger.LogError(log, err, "failed to create order")
-		return nil, app_errors.AppError(app_errors.StatusInternalServerError, "create order failed")
+		return nil, err
 	}
 
 	payReq := &paymentpb.PayRequest{
@@ -72,17 +90,26 @@ func (oS *OrderService) CreateOrder(ctx context.Context, orderRequest model.Crea
 		NextAttemptAt: time.Now(),
 	}
 
-	// write outboxRepo in same tx so it's transactional with order creation
-	if err := oS.outboxRepo.CreateOutbox(ctx, tx, outbox); err != nil {
+	// prepare outbox payload...
+	span.AddEvent("create outbox", trace.WithAttributes(attribute.String("aggregate_id", createOrderResp.Data.OrderID.String())))
+	if err = oS.outboxRepo.CreateOutbox(ctx, tx, outbox); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "create outbox failed")
+
+		err = app_errors.AppError(app_errors.StatusInternalServerError, "create outboxRepo failed")
 		logger.LogError(log, err, "failed to create outboxRepo")
-		return nil, app_errors.AppError(app_errors.StatusInternalServerError, "create outboxRepo failed")
+		return nil, err
 	}
 
-	// commit tx and return (no synchronous payment call)
-	if err := tx.Commit().Error; err != nil {
+	if err = tx.Commit().Error; err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "commit failed")
+
+		err = app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
 		logger.LogError(log, err, "failed to commit tx")
-		return nil, app_errors.AppError(app_errors.StatusInternalServerError, "commit failed")
+		return nil, err
 	}
 
+	span.SetStatus(codes.Ok, "created")
 	return createOrderResp, nil
 }

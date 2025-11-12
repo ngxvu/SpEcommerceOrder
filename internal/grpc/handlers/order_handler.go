@@ -3,6 +3,9 @@ package handlers
 import (
 	"context"
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"order/internal/models"
@@ -21,7 +24,13 @@ func NewOrderHandler(s services.OrderService) *OrderHandler {
 
 func (h *OrderHandler) CreateOrder(ctx context.Context, req *pbOrder.CreateOrderRequest) (*pbOrder.CreateOrderResponse, error) {
 
+	tracer := otel.Tracer("order/handler")
+	ctx, span := tracer.Start(ctx, "OrderHandler.CreateOrder",
+		trace.WithAttributes(attribute.String("grpc.method", "CreateOrder")))
+	defer span.End()
+
 	if req == nil {
+		span.SetAttributes(attribute.Bool("invalid_request", true))
 		return nil, status.Error(codes.InvalidArgument, "request is nil")
 	}
 
@@ -51,6 +60,7 @@ func (h *OrderHandler) CreateOrder(ctx context.Context, req *pbOrder.CreateOrder
 
 	createOrderResp, err := h.service.CreateOrder(ctx, servicesRequest)
 	if err != nil {
+		span.RecordError(err)
 		return nil, status.Errorf(codes.Internal, "create order failed: %v", err)
 	}
 

@@ -3,6 +3,12 @@ package workers
 import (
 	"context"
 	"encoding/json"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/grpc/metadata"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"log"
@@ -47,6 +53,11 @@ func (w *OutboxWorker) Run(ctx context.Context) {
 
 func (w *OutboxWorker) processBatch(ctx context.Context) error {
 
+	tracer := otel.Tracer("order/outbox-worker")
+	ctx, span := tracer.Start(ctx, "OutboxWorker.processBatch",
+		trace.WithAttributes(attribute.Int("limit", w.limit)))
+	defer span.End()
+
 	tx, cancel := w.pg.DBWithTimeout(ctx)
 	if cancel != nil {
 		defer cancel()
@@ -68,6 +79,9 @@ func (w *OutboxWorker) processBatch(ctx context.Context) error {
 
 	for _, o := range outs {
 
+		msgCtx, msgSpan := tracer.Start(ctx, "OutboxWorker.processMessage",
+			trace.WithAttributes(attribute.String("event_id", o.EventID.String()), attribute.String("event_type", o.EventType)))
+
 		// attempt delivery in transaction to handle concurrent workers safely
 		if err := tx.Transaction(func(tx *gorm.DB) error {
 			// reload row FOR UPDATE
@@ -83,19 +97,31 @@ func (w *OutboxWorker) processBatch(ctx context.Context) error {
 			// unmarshal payload into PayRequest
 			var payReq pbPayment.PayRequest
 			if err := json.Unmarshal([]byte(row.Payload), &payReq); err != nil {
+
+				msgSpan.RecordError(err)
+				msgSpan.SetStatus(codes.Error, "invalid payload")
+				msgSpan.End()
+
 				// mark failed permanently if payload invalid
 				row.Status = model.OutboxStatusFailed
 				now := time.Now()
 				row.ProcessedAt = &now
 				return tx.Save(&row).Error
+
 			}
 
 			// set EventID in request for idempotency
 			payReq.EventId = row.EventID.String()
 
+			headers := map[string]string{}
+			otel.GetTextMapPropagator().Inject(msgCtx, propagation.MapCarrier(headers))
+			md := metadata.New(headers)
+			msgCtx = metadata.NewOutgoingContext(msgCtx, md)
+
 			// call payment service
 			_, err := w.payment.Pay(ctx, &payReq)
 			if err == nil {
+				msgSpan.RecordError(err)
 				row.Status = model.OutboxStatusDone
 				now := time.Now()
 				row.ProcessedAt = &now
@@ -112,7 +138,7 @@ func (w *OutboxWorker) processBatch(ctx context.Context) error {
 			// log and continue with other rows
 			log.Printf("failed to process outbox %s: %v", o.ID, err)
 		}
+		msgSpan.End()
 	}
-
 	return nil
 }

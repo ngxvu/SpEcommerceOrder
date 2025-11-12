@@ -24,9 +24,12 @@ require (
 	github.com/swaggo/files v1.0.1
 	github.com/swaggo/gin-swagger v1.6.0
 	github.com/volatiletech/sqlboiler/v4 v4.18.0
+	go.opentelemetry.io/otel v1.38.0
+	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.38.0
+	go.opentelemetry.io/otel/sdk v1.38.0
 	golang.org/x/crypto v0.41.0
+	google.golang.org/genproto v0.0.0-20220519153652-3a47de7e79bd
 	google.golang.org/grpc v1.75.1
-	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.1.0
 	google.golang.org/protobuf v1.36.10
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/gorm v1.26.0
@@ -42,6 +45,8 @@ require (
 	github.com/friendsofgo/errors v0.9.2 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.8 // indirect
 	github.com/gin-contrib/sse v1.0.0 // indirect
+	github.com/go-logr/logr v1.4.3 // indirect
+	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.19.6 // indirect
 	github.com/go-openapi/spec v0.20.4 // indirect
@@ -71,7 +76,6 @@ require (
 	github.com/pelletier/go-toml/v2 v2.2.3 // indirect
 	github.com/pierrec/lz4/v4 v4.1.15 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/rogpeppe/go-internal v1.13.1 // indirect
 	github.com/shiena/ansicolor v0.0.0-20151119151921-a422bbe96644 // indirect
 	github.com/spf13/cast v1.7.1 // indirect
 	github.com/swaggo/swag v1.8.12 // indirect
@@ -81,7 +85,9 @@ require (
 	github.com/volatiletech/null/v8 v8.1.2 // indirect
 	github.com/volatiletech/randomize v0.0.1 // indirect
 	github.com/volatiletech/strmangle v0.0.6 // indirect
-	go.yaml.in/yaml/v3 v3.0.4 // indirect
+	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
+	go.opentelemetry.io/otel/metric v1.38.0 // indirect
+	go.opentelemetry.io/otel/trace v1.38.0 // indirect
 	golang.org/x/arch v0.15.0 // indirect
 	golang.org/x/net v0.43.0 // indirect
 	golang.org/x/sync v0.17.0 // indirect
@@ -89,7 +95,6 @@ require (
 	golang.org/x/text v0.29.0 // indirect
 	golang.org/x/tools v0.36.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220609144429-65e65417b02f // indirect
-	google.golang.org/genproto v0.0.0-20220519153652-3a47de7e79bd // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
