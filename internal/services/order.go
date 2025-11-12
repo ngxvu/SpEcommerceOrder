@@ -9,7 +9,8 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	paymentclient "order/internal/clients/payment"
-	model "order/internal/models"
+	"order/internal/events"
+	"order/internal/models"
 	"order/internal/repositories"
 	pgGorm "order/internal/repositories/pg-gorm"
 	"order/pkg/core/logger"
@@ -26,7 +27,7 @@ type OrderService struct {
 }
 
 type OrderServiceInterface interface {
-	CreateOrder(ctx context.Context, orderRequest model.CreateOrderRequest) (*model.CreateOrderResponse, error)
+	CreateOrder(ctx context.Context, orderRequest models.CreateOrderRequest) (*models.CreateOrderResponse, error)
 }
 
 func NewOrderService(
@@ -43,7 +44,9 @@ func NewOrderService(
 	}
 }
 
-func (oS *OrderService) CreateOrder(ctx context.Context, orderRequest model.CreateOrderRequest) (*model.CreateOrderResponse, error) {
+func (oS *OrderService) CreateOrder(
+	ctx context.Context,
+	orderRequest models.CreateOrderRequest) (*models.CreateOrderResponse, error) {
 
 	log := logger.WithTag("OrderService|CreateOrder")
 
@@ -79,13 +82,13 @@ func (oS *OrderService) CreateOrder(ctx context.Context, orderRequest model.Crea
 
 	bs, _ := json.Marshal(payReq)
 
-	outbox := &model.Outbox{
+	outbox := &models.Outbox{
 		EventID:       uuid.New(),
-		EventType:     "payment_required",
-		AggregateType: "order",
+		EventType:     events.EventPaymentRequired.String(),
+		AggregateType: events.AggregateOrder.String(),
 		AggregateID:   createOrderResp.Data.OrderID,
 		Payload:       string(bs),
-		Status:        model.OutboxStatusPending,
+		Status:        models.OutboxStatusPending,
 		Attempts:      0,
 		NextAttemptAt: time.Now(),
 	}
