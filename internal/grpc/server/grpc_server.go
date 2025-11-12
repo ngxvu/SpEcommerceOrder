@@ -3,14 +3,13 @@ package server
 import (
 	"context"
 	"fmt"
-	"log"
-	"net"
-	"net/http"
-
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-
+	"log"
+	"net"
+	"net/http"
+	"order/internal/metrics"
 	pb "order/pkg/proto"
 )
 
@@ -23,7 +22,9 @@ type GRPCServer struct {
 }
 
 func NewGRPCServer(handler pb.OrderServiceServer, grpcAddr, httpAddr string) *GRPCServer {
-	s := grpc.NewServer()
+	s := grpc.NewServer(
+		grpc.UnaryInterceptor(metrics.UnaryServerInterceptor("order")),
+	)
 	pb.RegisterOrderServiceServer(s, handler)
 	return &GRPCServer{
 		server:   s,
