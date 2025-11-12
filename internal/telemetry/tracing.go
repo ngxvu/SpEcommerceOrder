@@ -13,7 +13,8 @@ import (
 
 func InitTracer(ctx context.Context, serviceName string) (func(context.Context) error, error) {
 	// Jaeger collector endpoint (docker-compose maps `jaeger:14268`)
-	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint("http://jaeger:14268/api/traces")))
+	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(
+		jaeger.WithEndpoint("http://localhost:14268/api/traces")))
 	if err != nil {
 		return nil, fmt.Errorf("create jaeger exporter: %w", err)
 	}

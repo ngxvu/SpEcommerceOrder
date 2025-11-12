@@ -26,6 +26,7 @@ require (
 	github.com/swaggo/gin-swagger v1.6.0
 	github.com/volatiletech/sqlboiler/v4 v4.18.0
 	go.opentelemetry.io/otel v1.38.0
+	go.opentelemetry.io/otel/exporters/jaeger v1.17.0
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.38.0
 	go.opentelemetry.io/otel/sdk v1.38.0
 	go.opentelemetry.io/otel/trace v1.38.0
