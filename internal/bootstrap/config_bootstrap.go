@@ -7,25 +7,25 @@ import (
 	"order/pkg/core/db"
 )
 
-type App struct {
-	Config *configloader.Config
-	PGRepo repo.PGInterface
+type AppSetup struct {
+	AppConfig       *configloader.Config
+	PGRepoInterface repo.PGInterface
 }
 
 // InitializeApp initializes all application dependencies
-func InitializeAppConfiguration() (*App, error) {
+func InitializeAppConfiguration() (*AppSetup, error) {
 	config := configloader.GetConfig()
 
 	// Initialize database
-	dbBackend, err := db.InitDatabase(config)
+	dbBackend, err := db.DatabaseInitialization(config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize database: %w", err)
 	}
 
 	pgRepo := repo.NewPGRepo(dbBackend)
 
-	return &App{
-		PGRepo: pgRepo,
-		Config: config,
+	return &AppSetup{
+		PGRepoInterface: pgRepo,
+		AppConfig:       config,
 	}, nil
 }

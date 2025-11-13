@@ -55,7 +55,7 @@ type MessagesResponse struct {
 	Err  ErrorResponse `json:"error"`
 }
 
-func ErrorHandler(c *gin.Context) {
+func NewHandlerError(c *gin.Context) {
 	// Execute request handlers and then handle any app_errors
 	c.Next()
 	errs := c.Errors

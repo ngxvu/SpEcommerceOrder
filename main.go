@@ -30,7 +30,7 @@ func main() {
 
 	// initialize tracer early and keep cleanup for shutdown
 	ctx := context.Background()
-	cleanup, err := telemetry.InializerTracer(ctx, utils.APPNAME, app.Config)
+	cleanup, err := telemetry.InializerTracer(ctx, utils.APPNAME, app.AppConfig)
 	if err != nil {
 		logger.LogError(logger.WithTag("Backend|Main"), err, "failed to initialize tracer")
 		return
@@ -39,7 +39,7 @@ func main() {
 	defer func() { _ = cleanup(context.Background()) }()
 
 	// start prometheus metrics endpoint (scraped at service:9090/metrics)
-	go bootstrap.StartMetricsServer(app.Config)
+	go bootstrap.StartMetricsServer(app.AppConfig)
 
 	// Setup and start server
 	router := gin.Default()
@@ -53,7 +53,7 @@ func main() {
 
 	routes.NewHTTPServerSetup(router, configCors, app)
 
-	httpSrv, httpErrCh := bootstrap.StartServer(router, app.Config)
+	httpSrv, httpErrCh := bootstrap.StartServer(router, app.AppConfig)
 
 	go func() {
 		if err := <-httpErrCh; err != nil {

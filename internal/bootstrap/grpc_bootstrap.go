@@ -15,13 +15,13 @@ import (
 	"time"
 )
 
-func StartGRPC(app *App) (*server.GRPCServer, error) {
+func StartGRPC(app *AppSetup) (*server.GRPCServer, error) {
 
-	grpcPort, err := strconv.Atoi(app.Config.GRPCPort)
+	grpcPort, err := strconv.Atoi(app.AppConfig.GRPCPort)
 	if err != nil || grpcPort == 0 {
 		grpcPort = 50051
 	}
-	httpPort, err := strconv.Atoi(app.Config.HTTPPort)
+	httpPort, err := strconv.Atoi(app.AppConfig.HTTPPort)
 	if err != nil || httpPort == 0 {
 		httpPort = 8080
 	}
@@ -29,12 +29,12 @@ func StartGRPC(app *App) (*server.GRPCServer, error) {
 	grpcAddr := fmt.Sprintf(":%d", grpcPort)
 	httpAddr := fmt.Sprintf(":%d", httpPort)
 
-	newPgRepo := app.PGRepo
+	newPgRepo := app.PGRepoInterface
 	orderRepo := repo.NewOrderRepository(newPgRepo)
 	outboxRepo := repo.NewOutboxRepository(newPgRepo)
 
 	// create gRPC connection to payment service and build payment client
-	paymentAddr := app.Config.PaymentServiceAddr
+	paymentAddr := app.AppConfig.PaymentServiceAddr
 	if paymentAddr == "" {
 		paymentAddr = "payment-service:50051"
 	}
@@ -54,7 +54,7 @@ func StartGRPC(app *App) (*server.GRPCServer, error) {
 
 	// start outbox worker properly (was previously discarded with `_ = ...`)
 	ctx := context.Background()
-	worker := workers.NewOutboxWorker(newPgRepo, paymentClient)
+	worker := workers.NewOutboxWorkerInit(newPgRepo, paymentClient)
 	go worker.Run(ctx)
 
 	go func() {

@@ -37,8 +37,8 @@ var (
 	)
 )
 
-// Register registers metrics with Prometheus and returns an HTTP handler for /metrics.
-func Register() http.Handler {
+// RegisterMetrics registers metrics with Prometheus and returns an HTTP handler for /metrics.
+func RegisterMetrics() http.Handler {
 	prometheus.MustRegister(RequestDuration, RequestsTotal, ErrorsTotal)
 	return promhttp.Handler()
 }

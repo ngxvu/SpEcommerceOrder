@@ -12,14 +12,14 @@ import (
 	"order/pkg/http/utils/app_errors"
 )
 
-func NewHTTPServerSetup(router *gin.Engine, configCors cors.Config, app *bootstrap.App) {
+func NewHTTPServerSetup(router *gin.Engine, configCors cors.Config, app *bootstrap.AppSetup) {
 	router.Use(cors.New(configCors))
 	router.Use(middlewares.RequestIDMiddleware())
 	router.Use(middlewares.RequestLogger(utils.APPNAME))
-	router.Use(app_errors.ErrorHandler)
+	router.Use(app_errors.NewHandlerError)
 
 	server.ApplicationV1Router(
-		app.PGRepo,
+		app.PGRepoInterface,
 		router,
 	)
 

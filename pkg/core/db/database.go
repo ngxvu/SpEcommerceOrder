@@ -14,7 +14,7 @@ var (
 	once       sync.Once
 )
 
-func InitDatabase(config *configloader.Config) (*gorm.DB, error) {
+func DatabaseInitialization(config *configloader.Config) (*gorm.DB, error) {
 	var err error
 	once.Do(func() {
 		dbInstance, err = initializeDatabase(config)

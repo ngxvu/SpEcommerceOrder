@@ -26,7 +26,7 @@ type OutboxWorker struct {
 	limit    int
 }
 
-func NewOutboxWorker(pg repo.PGInterface, pay paymentclient.PaymentClient) *OutboxWorker {
+func NewOutboxWorkerInit(pg repo.PGInterface, pay paymentclient.PaymentClient) *OutboxWorker {
 	return &OutboxWorker{
 		pg:       pg,
 		payment:  pay,
