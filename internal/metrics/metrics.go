@@ -17,7 +17,7 @@ var (
 			Name: "grpc_requests_total",
 			Help: "Total number of gRPC requests",
 		},
-		[]string{"service", "method", "code"},
+		[]string{"service", "method", "code", "direction"},
 	)
 	requestDuration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
@@ -25,7 +25,7 @@ var (
 			Help:    "gRPC request latency in seconds",
 			Buckets: prometheus.DefBuckets,
 		},
-		[]string{"service", "method"},
+		[]string{"service", "method", "direction"},
 	)
 )
 
