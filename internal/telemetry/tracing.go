@@ -12,7 +12,8 @@ import (
 	"time"
 )
 
-func InitTracer(ctx context.Context, serviceName string, config *configloader.Config) (func(context.Context) error, error) {
+// InializerTracer inializer for OpenTelemetry Tracer with Jaeger exporter
+func InializerTracer(ctx context.Context, serviceName string, config *configloader.Config) (func(context.Context) error, error) {
 
 	jaegerEndpoint := config.JaegerEndpoint
 	if jaegerEndpoint == "" {

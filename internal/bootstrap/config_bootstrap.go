@@ -12,7 +12,8 @@ type App struct {
 	PGRepo repo.PGInterface
 }
 
-func InitializeApp() (*App, error) {
+// InitializeApp initializes all application dependencies
+func InitializeAppConfiguration() (*App, error) {
 	config := configloader.GetConfig()
 
 	// Initialize database

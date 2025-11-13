@@ -5,10 +5,8 @@ import (
 	limit "github.com/aviddiviner/gin-limit"
 	"github.com/gin-gonic/gin"
 	"log"
-	"net/http"
 	"order/internal/bootstrap"
 	"order/internal/http/routes"
-	"order/internal/metrics"
 	"order/internal/telemetry"
 	"order/pkg/core/logger"
 	"order/pkg/http/middlewares"
@@ -24,7 +22,7 @@ func main() {
 	logger.SetupLogger()
 
 	// Initialize application
-	app, err := bootstrap.InitializeApp()
+	app, err := bootstrap.InitializeAppConfiguration()
 	if err != nil {
 		logger.LogError(logger.WithTag("Backend|Main"), err, "failed to initialize application")
 		return
@@ -32,7 +30,7 @@ func main() {
 
 	// initialize tracer early and keep cleanup for shutdown
 	ctx := context.Background()
-	cleanup, err := telemetry.InitTracer(ctx, utils.APPNAME, app.Config)
+	cleanup, err := telemetry.InializerTracer(ctx, utils.APPNAME, app.Config)
 	if err != nil {
 		logger.LogError(logger.WithTag("Backend|Main"), err, "failed to initialize tracer")
 		return
@@ -53,7 +51,7 @@ func main() {
 		return
 	}
 
-	routes.NewHTTPServer(router, configCors, app)
+	routes.NewHTTPServerSetup(router, configCors, app)
 
 	httpSrv, httpErrCh := bootstrap.StartServer(router, app.Config)
 

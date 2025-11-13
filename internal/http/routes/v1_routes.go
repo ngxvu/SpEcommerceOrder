@@ -12,7 +12,7 @@ import (
 	"order/pkg/http/utils/app_errors"
 )
 
-func NewHTTPServer(router *gin.Engine, configCors cors.Config, app *bootstrap.App) {
+func NewHTTPServerSetup(router *gin.Engine, configCors cors.Config, app *bootstrap.App) {
 	router.Use(cors.New(configCors))
 	router.Use(middlewares.RequestIDMiddleware())
 	router.Use(middlewares.RequestLogger(utils.APPNAME))
