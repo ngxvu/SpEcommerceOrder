@@ -23,6 +23,7 @@ type GRPCServer struct {
 
 func NewGRPCServer(handler pb.OrderServiceServer, grpcAddr, httpAddr string) *GRPCServer {
 	s := grpc.NewServer(
+		// incoming from clients to server will be measured here
 		grpc.UnaryInterceptor(metrics.UnaryServerInterceptor("order")),
 	)
 	pb.RegisterOrderServiceServer(s, handler)
@@ -33,8 +34,6 @@ func NewGRPCServer(handler pb.OrderServiceServer, grpcAddr, httpAddr string) *GR
 	}
 }
 
-// Run starts the gRPC server and the grpc-gateway HTTP server.
-// Cancel the provided ctx to trigger graceful shutdown.
 func (s *GRPCServer) Run(ctx context.Context) error {
 	// start gRPC listener
 	lis, err := net.Listen("tcp", s.grpcAddr)
@@ -55,14 +54,18 @@ func (s *GRPCServer) Run(ctx context.Context) error {
 	gwMux := runtime.NewServeMux()
 	dialOpts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	if err := pb.RegisterOrderServiceHandlerFromEndpoint(ctx, gwMux, s.grpcAddr, dialOpts); err != nil {
-		// stop gRPC server if gateway registration fails
 		s.server.GracefulStop()
 		return err
 	}
 
+	// create top-level HTTP mux and mount /metrics and the gateway
+	httpMux := http.NewServeMux()
+	httpMux.Handle("/metrics", metrics.RegisterMetrics())
+	httpMux.Handle("/", gwMux)
+
 	s.httpServer = &http.Server{
 		Addr:    s.httpAddr,
-		Handler: gwMux,
+		Handler: httpMux,
 	}
 
 	httpErrCh := make(chan error, 1)
@@ -77,7 +80,6 @@ func (s *GRPCServer) Run(ctx context.Context) error {
 	select {
 	case <-ctx.Done():
 		log.Println("shutting down servers")
-		// Graceful shutdown of HTTP and gRPC
 		_ = s.httpServer.Shutdown(context.Background())
 		s.server.GracefulStop()
 		return ctx.Err()

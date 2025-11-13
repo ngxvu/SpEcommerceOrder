@@ -28,7 +28,7 @@ func main() {
 		return
 	}
 
-	// initialize tracer early and keep cleanup for shutdown
+	// Initialize tracer early and keep cleanup for shutdown
 	ctx := context.Background()
 	cleanup, err := telemetry.InializerTracer(ctx, utils.APPNAME, app.AppConfig)
 	if err != nil {
@@ -37,9 +37,6 @@ func main() {
 	}
 	// ensure tracer provider shutdown on process exit
 	defer func() { _ = cleanup(context.Background()) }()
-
-	// start prometheus metrics endpoint (scraped at service:9090/metrics)
-	go bootstrap.StartMetricsServer(app.AppConfig)
 
 	// Setup and start server
 	router := gin.Default()
@@ -61,6 +58,7 @@ func main() {
 		}
 	}()
 
+	// Start gRPC server
 	grpcSrv, err := bootstrap.StartGRPC(app)
 	if err != nil {
 		log.Fatalf("failed to start grpc: %v", err)

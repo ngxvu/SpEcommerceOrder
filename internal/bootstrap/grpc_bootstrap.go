@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	paymentclient "order/internal/clients/payment"
+	"order/internal/grpc/clients/payment"
 	"order/internal/grpc/handlers"
 	"order/internal/grpc/server"
+	"order/internal/metrics"
 	repo "order/internal/repositories"
 	"order/internal/services"
 	workers "order/internal/workers"
@@ -17,16 +18,18 @@ import (
 
 func StartGRPC(app *AppSetup) (*server.GRPCServer, error) {
 
+	// grpcPort using for grpc server to transport gRPC requests
 	grpcPort, err := strconv.Atoi(app.AppConfig.GRPCPort)
 	if err != nil || grpcPort == 0 {
 		grpcPort = 50051
 	}
+	grpcAddr := fmt.Sprintf(":%d", grpcPort)
+
+	// httpPort using for http server of grpc gateway to transport HTTP requests that will be converted to gRPC requests
 	httpPort, err := strconv.Atoi(app.AppConfig.HTTPPort)
 	if err != nil || httpPort == 0 {
 		httpPort = 8080
 	}
-
-	grpcAddr := fmt.Sprintf(":%d", grpcPort)
 	httpAddr := fmt.Sprintf(":%d", httpPort)
 
 	newPgRepo := app.PGRepoInterface
@@ -36,17 +39,27 @@ func StartGRPC(app *AppSetup) (*server.GRPCServer, error) {
 	// create gRPC connection to payment service and build payment client
 	paymentAddr := app.AppConfig.PaymentServiceAddr
 	if paymentAddr == "" {
-		paymentAddr = "payment-service:50051"
+		paymentAddr = "localhost:50052"
 	}
 
+	// Dial context with timeout
 	dialCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	conn, err := grpc.DialContext(dialCtx, paymentAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	// conn is connection to payment gRPC service
+	connection, err := grpc.DialContext(
+		dialCtx,
+		paymentAddr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+
+		// outgoing from this order service to payment service will be measured here
+		grpc.WithUnaryInterceptor(metrics.UnaryClientInterceptor("order")),
+	)
 	if err != nil {
 		return nil, err
 	}
-	paymentClient := paymentclient.NewPaymentGRPCClient(conn)
+
+	paymentClient := paymentclient.NewPaymentGRPCClient(connection)
 	orderService := services.NewOrderService(orderRepo, newPgRepo, paymentClient, outboxRepo)
 	handler := handlers.NewOrderHandler(*orderService)
 

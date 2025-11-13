@@ -2,72 +2,60 @@ package metrics
 
 import (
 	"context"
+	"net/http"
+	"time"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
-	"net/http"
-	"time"
 )
 
 var (
-	RequestDuration = prometheus.NewHistogramVec(
+	requestCount = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "grpc_requests_total",
+			Help: "Total number of gRPC requests",
+		},
+		[]string{"service", "method", "code"},
+	)
+	requestDuration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name:    "rpc_request_duration_seconds",
-			Help:    "Histogram of RPC handler duration in seconds",
+			Name:    "grpc_request_duration_seconds",
+			Help:    "gRPC request latency in seconds",
 			Buckets: prometheus.DefBuckets,
 		},
 		[]string{"service", "method"},
 	)
-
-	RequestsTotal = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "rpc_requests_total",
-			Help: "Total number of RPC requests",
-		},
-		[]string{"service", "method"},
-	)
-
-	ErrorsTotal = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "rpc_errors_total",
-			Help: "Total number of RPC errors",
-		},
-		[]string{"service", "method", "code"},
-	)
 )
 
-// RegisterMetrics registers metrics with Prometheus and returns an HTTP handler for /metrics.
+func init() {
+	prometheus.MustRegister(requestCount, requestDuration)
+}
+
+// RegisterMetrics returns an http.Handler for Prometheus scraping.
 func RegisterMetrics() http.Handler {
-	prometheus.MustRegister(RequestDuration, RequestsTotal, ErrorsTotal)
 	return promhttp.Handler()
 }
 
-// UnaryServerInterceptor returns a grpc.UnaryServerInterceptor that records metrics.
-// serviceName is a short identifier like "order" or "payment".
+// UnaryServerInterceptor gets the gRPC server interceptor for metrics collection.
 func UnaryServerInterceptor(serviceName string) grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context,
 		req interface{},
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
-	) (resp interface{}, err error) {
+	) (interface{}, error) {
 		start := time.Now()
-		resp, err = handler(ctx, req)
-
-		method := info.FullMethod // e.g. /package.Service/Method
-		RequestsTotal.WithLabelValues(serviceName, method).Inc()
-		RequestDuration.WithLabelValues(serviceName, method).Observe(time.Since(start).Seconds())
-
-		if err != nil {
-			code := status.Code(err).String()
-			ErrorsTotal.WithLabelValues(serviceName, method, code).Inc()
-		}
+		resp, err := handler(ctx, req)
+		code := status.Code(err).String()
+		requestCount.WithLabelValues(serviceName, info.FullMethod, code, "incoming").Inc()
+		requestDuration.WithLabelValues(serviceName, info.FullMethod, "incoming").Observe(time.Since(start).Seconds())
 		return resp, err
 	}
 }
 
-// UnaryClientInterceptor returns a grpc.UnaryClientInterceptor that records metrics for outgoing calls.
+// UnaryClientInterceptor gets the gRPC client interceptor for metrics collection.
 func UnaryClientInterceptor(serviceName string) grpc.UnaryClientInterceptor {
 	return func(
 		ctx context.Context,
@@ -79,13 +67,9 @@ func UnaryClientInterceptor(serviceName string) grpc.UnaryClientInterceptor {
 	) error {
 		start := time.Now()
 		err := invoker(ctx, method, req, reply, cc, opts...)
-
-		RequestsTotal.WithLabelValues(serviceName, method).Inc()
-		RequestDuration.WithLabelValues(serviceName, method).Observe(time.Since(start).Seconds())
-		if err != nil {
-			code := status.Code(err).String()
-			ErrorsTotal.WithLabelValues(serviceName, method, code).Inc()
-		}
+		code := status.Code(err).String()
+		requestCount.WithLabelValues(serviceName, method, code, "outgoing").Inc()
+		requestDuration.WithLabelValues(serviceName, method, "outgoing").Observe(time.Since(start).Seconds())
 		return err
 	}
 }

@@ -12,7 +12,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"log"
-	paymentclient "order/internal/clients/payment"
+	"order/internal/grpc/clients/payment"
 	model "order/internal/models"
 	repo "order/internal/repositories/pg-gorm"
 	pbPayment "order/pkg/proto/paymentpb"
