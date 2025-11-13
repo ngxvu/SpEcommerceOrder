@@ -21,19 +21,7 @@ import (
 
 func main() {
 	logger.Init(utils.APPNAME)
-
-	// initialize tracer early and keep cleanup for shutdown
-	ctx := context.Background()
-	cleanup, err := telemetry.InitTracer(ctx, utils.APPNAME)
-	if err != nil {
-		logger.LogError(logger.WithTag("Backend|Main"), err, "failed to initialize tracer")
-		return
-	}
-	// ensure tracer provider shutdown on process exit
-	defer func() { _ = cleanup(context.Background()) }()
-
-	// start prometheus metrics endpoint (scraped at service:9090/metrics)
-	go StartMetricsServer(":9090")
+	logger.SetupLogger()
 
 	// Initialize application
 	app, err := bootstrap.InitializeApp()
@@ -42,7 +30,18 @@ func main() {
 		return
 	}
 
-	logger.SetupLogger()
+	// initialize tracer early and keep cleanup for shutdown
+	ctx := context.Background()
+	cleanup, err := telemetry.InitTracer(ctx, utils.APPNAME, app.Config)
+	if err != nil {
+		logger.LogError(logger.WithTag("Backend|Main"), err, "failed to initialize tracer")
+		return
+	}
+	// ensure tracer provider shutdown on process exit
+	defer func() { _ = cleanup(context.Background()) }()
+
+	// start prometheus metrics endpoint (scraped at service:9090/metrics)
+	go bootstrap.StartMetricsServer(app.Config)
 
 	// Setup and start server
 	router := gin.Default()
@@ -87,14 +86,5 @@ func main() {
 		if err := httpSrv.Shutdown(shutdownCtx); err != nil {
 			log.Printf("http shutdown error: %v", err)
 		}
-	}
-}
-
-func StartMetricsServer(addr string) {
-	handler := metrics.Register()
-	http.Handle("/metrics", handler)
-	log.Printf("prometheus metrics listening on %s/metrics", addr)
-	if err := http.ListenAndServe(addr, nil); err != nil {
-		log.Fatalf("metrics server error: %v", err)
 	}
 }

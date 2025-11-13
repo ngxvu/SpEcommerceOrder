@@ -6,9 +6,9 @@ scrape_configs:
     static_configs:
       - targets: ['host.docker.internal:9090']
 
-  - job_name: 'payment'
-    static_configs:
-      - targets: ['host.docker.internal:9091']
+#  - job_name: 'payment'
+#    static_configs:
+#      - targets: ['host.docker.internal:9091']
 
   - job_name: 'jaeger'
     metrics_path: /metrics

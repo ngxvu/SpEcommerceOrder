@@ -8,13 +8,19 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
+	"order/pkg/core/configloader"
 	"time"
 )
 
-func InitTracer(ctx context.Context, serviceName string) (func(context.Context) error, error) {
-	// Jaeger collector endpoint (docker-compose maps `jaeger:14268`)
+func InitTracer(ctx context.Context, serviceName string, config *configloader.Config) (func(context.Context) error, error) {
+
+	jaegerEndpoint := config.JaegerEndpoint
+	if jaegerEndpoint == "" {
+		jaegerEndpoint = "http://localhost:14268/api/traces"
+	}
+
 	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(
-		jaeger.WithEndpoint("http://localhost:14268/api/traces")))
+		jaeger.WithEndpoint(jaegerEndpoint)))
 	if err != nil {
 		return nil, fmt.Errorf("create jaeger exporter: %w", err)
 	}

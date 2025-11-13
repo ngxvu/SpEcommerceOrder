@@ -12,7 +12,6 @@ type App struct {
 	PGRepo repo.PGInterface
 }
 
-// initializeApp initializes all application dependencies
 func InitializeApp() (*App, error) {
 	config := configloader.GetConfig()
 

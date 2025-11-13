@@ -14,7 +14,6 @@ var (
 	once       sync.Once
 )
 
-// InitDatabase initializes and returns a singleton gorm database connection
 func InitDatabase(config *configloader.Config) (*gorm.DB, error) {
 	var err error
 	once.Do(func() {

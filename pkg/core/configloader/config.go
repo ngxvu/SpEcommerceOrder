@@ -33,6 +33,12 @@ type Config struct {
 
 	// Payment service address
 	PaymentServiceAddr string `env:"PAYMENT_SERVICE_ADDR" envDefault:"localhost:50052"`
+
+	// Metrics server port
+	MetricsAddress string `env:"METRICS_ADDR" envDefault:":9090"`
+
+	// Jeager tracing configs
+	JaegerEndpoint string `env:"JAEGER_ENDPOINT" envDefault:"http://localhost:14268/api/traces"`
 }
 
 var (
