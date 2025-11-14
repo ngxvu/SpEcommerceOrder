@@ -16,6 +16,7 @@ import (
 	model "order/internal/models"
 	repo "order/internal/repositories/pg-gorm"
 	pbPayment "order/pkg/proto/paymentpb"
+	"sync"
 	"time"
 )
 
@@ -77,68 +78,89 @@ func (w *OutboxWorker) processBatch(ctx context.Context) error {
 		return err
 	}
 
+	sem := make(chan struct{}, 5) // concurrency limit
+	var wg sync.WaitGroup
+
 	for _, o := range outs {
 
-		msgCtx, msgSpan := tracer.Start(ctx, "OutboxWorker.processMessage",
-			trace.WithAttributes(attribute.String("event_id", o.EventID.String()), attribute.String("event_type", o.EventType)))
+		sem <- struct{}{}
+		wg.Add(1)
 
-		// attempt delivery in transaction to handle concurrent workers safely
-		if err := tx.Transaction(func(tx *gorm.DB) error {
-			// reload row FOR UPDATE
-			var row model.Outbox
-			if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ?", o.ID).First(&row).Error; err != nil {
-				return err
+		// process each message in its own goroutine
+		go func(o model.Outbox) {
+			defer wg.Done()
+			defer func() { <-sem }()
+
+			// get a db connection for this goroutine
+			db, dbCancel := w.pg.DBWithTimeout(ctx)
+			if dbCancel != nil {
+				defer dbCancel()
 			}
-			// skip if already done by another worker
-			if row.Status == model.OutboxStatusDone {
-				return nil
-			}
 
-			// unmarshal payload into PayRequest
-			var payReq pbPayment.PayRequest
-			if err := json.Unmarshal([]byte(row.Payload), &payReq); err != nil {
+			// create span using the context (not the *gorm.DB)
+			tracer = otel.Tracer("order/outbox-worker")
+			msgCtx, msgSpan := tracer.Start(ctx, "OutboxWorker.processMessage",
+				trace.WithAttributes(attribute.String("event_id", o.EventID.String()), attribute.String("event_type", o.EventType)))
+			defer msgSpan.End()
 
-				msgSpan.RecordError(err)
-				msgSpan.SetStatus(codes.Error, "invalid payload")
-				msgSpan.End()
+			// attempt delivery in transaction to handle concurrent workers safely
+			if err := db.WithContext(msgCtx).Transaction(func(tx *gorm.DB) error {
+				// reload row FOR UPDATE
+				var row model.Outbox
+				if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ?", o.ID).First(&row).Error; err != nil {
+					return err
+				}
+				// skip if already done by another worker
+				if row.Status == model.OutboxStatusDone {
+					return nil
+				}
 
-				// mark failed permanently if payload invalid
-				row.Status = model.OutboxStatusFailed
-				now := time.Now()
-				row.ProcessedAt = &now
+				// unmarshal payload into PayRequest
+				var payReq pbPayment.PayRequest
+				if err := json.Unmarshal([]byte(row.Payload), &payReq); err != nil {
+					msgSpan.RecordError(err)
+					msgSpan.SetStatus(codes.Error, "invalid payload")
+
+					// mark failed permanently if payload invalid
+					row.Status = model.OutboxStatusFailed
+					now = time.Now()
+					row.ProcessedAt = &now
+					return tx.Save(&row).Error
+				}
+
+				// set EventID in request for idempotency
+				payReq.EventId = row.EventID.String()
+
+				// inject trace headers into outgoing metadata and put into context
+				headers := map[string]string{}
+				otel.GetTextMapPropagator().Inject(msgCtx, propagation.MapCarrier(headers))
+				md := metadata.New(headers)
+				callCtx := metadata.NewOutgoingContext(msgCtx, md)
+
+				// call payment service with the context that carries tracing/metadata
+				_, err := w.payment.Pay(callCtx, &payReq)
+
+				// if successful, mark done
+				if err == nil {
+					row.Status = model.OutboxStatusDone
+					now = time.Now()
+					row.ProcessedAt = &now
+					return tx.Save(&row).Error
+				}
+
+				// on failure, increment attempts and schedule retry with backoff
+				row.Attempts++
+				row.Status = model.OutboxStatusRetry
+				backoff := time.Duration(row.Attempts*row.Attempts) * time.Second // simple quadratic backoff
+				row.NextAttemptAt = time.Now().Add(backoff)
 				return tx.Save(&row).Error
-
-			}
-
-			// set EventID in request for idempotency
-			payReq.EventId = row.EventID.String()
-
-			headers := map[string]string{}
-			otel.GetTextMapPropagator().Inject(msgCtx, propagation.MapCarrier(headers))
-			md := metadata.New(headers)
-			msgCtx = metadata.NewOutgoingContext(msgCtx, md)
-
-			// call payment service
-			_, err := w.payment.Pay(ctx, &payReq)
-			if err == nil {
+			}); err != nil {
+				// log and continue with other rows
 				msgSpan.RecordError(err)
-				row.Status = model.OutboxStatusDone
-				now := time.Now()
-				row.ProcessedAt = &now
-				return tx.Save(&row).Error
+				log.Printf("failed to process outbox %s: %v", o.ID, err)
 			}
-
-			// on failure, increment attempts and schedule retry with backoff
-			row.Attempts++
-			row.Status = model.OutboxStatusRetry
-			backoff := time.Duration(row.Attempts*row.Attempts) * time.Second // simple quadratic backoff
-			row.NextAttemptAt = time.Now().Add(backoff)
-			return tx.Save(&row).Error
-		}); err != nil {
-			// log and continue with other rows
-			log.Printf("failed to process outbox %s: %v", o.ID, err)
-		}
-		msgSpan.End()
+		}(o)
 	}
+	wg.Wait()
 	return nil
 }
