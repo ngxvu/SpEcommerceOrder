@@ -13,6 +13,7 @@ import (
 	"order/internal/models"
 	"order/internal/repositories"
 	pgGorm "order/internal/repositories/pg-gorm"
+	"order/pkg/core/kafka"
 	"order/pkg/core/logger"
 	"order/pkg/http/utils/app_errors"
 	"order/pkg/proto/paymentpb"
@@ -46,7 +47,9 @@ func NewOrderService(
 
 func (oS *OrderService) CreateOrder(
 	ctx context.Context,
-	orderRequest models.CreateOrderRequest) (*models.CreateOrderResponse, error) {
+	orderRequest models.CreateOrderRequest,
+	producer *kafka.Producer,
+) (*models.CreateOrderResponse, error) {
 
 	log := logger.WithTag("OrderService|CreateOrder")
 

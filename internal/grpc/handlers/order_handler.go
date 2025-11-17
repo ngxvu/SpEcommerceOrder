@@ -10,16 +10,20 @@ import (
 	"google.golang.org/grpc/status"
 	"order/internal/models"
 	"order/internal/services"
+	"order/pkg/core/kafka"
 	pbOrder "order/pkg/proto"
 )
 
 type OrderHandler struct {
 	pbOrder.UnimplementedOrderServiceServer
-	service services.OrderService
+	service  services.OrderService
+	kafkaApp *kafka.App
 }
 
-func NewOrderHandler(s services.OrderService) *OrderHandler {
-	return &OrderHandler{service: s}
+func NewOrderHandler(s services.OrderService, kafkaApp *kafka.App) *OrderHandler {
+	return &OrderHandler{
+		service:  s,
+		kafkaApp: kafkaApp}
 }
 
 func (h *OrderHandler) CreateOrder(ctx context.Context, req *pbOrder.CreateOrderRequest) (*pbOrder.CreateOrderResponse, error) {
@@ -58,7 +62,7 @@ func (h *OrderHandler) CreateOrder(ctx context.Context, req *pbOrder.CreateOrder
 		OrderItems:  listOrderItems,
 	}
 
-	createOrderResp, err := h.service.CreateOrder(ctx, servicesRequest)
+	createOrderResp, err := h.service.CreateOrder(ctx, servicesRequest, h.kafkaApp.Producer)
 	if err != nil {
 		span.RecordError(err)
 		return nil, status.Errorf(codes.Internal, "create order failed: %v", err)

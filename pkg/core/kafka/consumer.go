@@ -18,8 +18,14 @@ type Consumer struct {
 }
 
 func NewConsumer(brokers, topic, groupID string) *Consumer {
-	reader := NewReader(brokers, topic, groupID)
-	return &Consumer{Reader: reader}
+	r := kafka.NewReader(kafka.ReaderConfig{
+		Brokers: []string{brokers},
+		GroupID: groupID, // using consumer group
+		Topic:   topic,   // \*set Topic when using GroupID\*
+		// GroupTopics: []string{topic}, // \*do NOT set this together with Topic\*
+	})
+
+	return &Consumer{Reader: r}
 }
 
 // Adapter implement ReaderWrapper

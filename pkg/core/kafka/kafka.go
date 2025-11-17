@@ -5,6 +5,11 @@ import (
 	"strings"
 )
 
+type App struct {
+	Producer *Producer
+	Consumer *Consumer
+}
+
 func NewWriter(brokers, topic string) *kafka.Writer {
 	return &kafka.Writer{
 		Addr:     kafka.TCP(strings.Split(brokers, ",")...),

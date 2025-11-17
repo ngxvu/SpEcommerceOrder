@@ -38,6 +38,9 @@ func main() {
 	// ensure tracer provider shutdown on process exit
 	defer func() { _ = cleanup(context.Background()) }()
 
+	kafkaApp, stopKafka := bootstrap.InitKafka(context.Background())
+	defer stopKafka()
+
 	// Setup and start server
 	router := gin.Default()
 	router.Use(limit.MaxAllowed(200))
@@ -51,7 +54,6 @@ func main() {
 	routes.NewHTTPServerSetup(router, configCors, app)
 
 	httpSrv, httpErrCh := bootstrap.StartServer(router, app.AppConfig)
-
 	go func() {
 		if err := <-httpErrCh; err != nil {
 			log.Fatalf("http server error: %v", err)
@@ -59,14 +61,14 @@ func main() {
 	}()
 
 	// Start gRPC server
-	grpcSrv, err := bootstrap.StartGRPC(app)
+	grpcSrv, err := bootstrap.StartGRPC(app, kafkaApp)
 	if err != nil {
 		log.Fatalf("failed to start grpc: %v", err)
 	}
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	sigCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	<-ctx.Done()
+	<-sigCtx.Done()
 
 	log.Println("shutting down...")
 

@@ -12,11 +12,12 @@ import (
 	repo "order/internal/repositories"
 	"order/internal/services"
 	workers "order/internal/workers"
+	"order/pkg/core/kafka"
 	"strconv"
 	"time"
 )
 
-func StartGRPC(app *AppSetup) (*server.GRPCServer, error) {
+func StartGRPC(app *AppSetup, kafkaApp *kafka.App) (*server.GRPCServer, error) {
 
 	// grpcPort using for grpc server to transport gRPC requests
 	grpcPort, err := strconv.Atoi(app.AppConfig.GRPCPort)
@@ -61,7 +62,7 @@ func StartGRPC(app *AppSetup) (*server.GRPCServer, error) {
 
 	paymentClient := paymentclient.NewPaymentGRPCClient(connection)
 	orderService := services.NewOrderService(orderRepo, newPgRepo, paymentClient, outboxRepo)
-	handler := handlers.NewOrderHandler(*orderService)
+	handler := handlers.NewOrderHandler(*orderService, kafkaApp)
 
 	grpcServer := server.NewGRPCServer(handler, grpcAddr, httpAddr)
 

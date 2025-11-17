@@ -29,13 +29,13 @@ func (o *OrderHandler) CreateOrder(ctx *gin.Context) {
 	}
 
 	// this context is the same as context.Background() but tied to the HTTP request lifecycle
-	context := ctx.Request.Context()
+	//context := ctx.Request.Context()
 
-	response, err := o.orderService.CreateOrder(context, requestCreateOrder)
-	if err != nil {
-		_ = ctx.Error(err)
-		return
-	}
+	//response, err := o.orderService.CreateOrder(context, requestCreateOrder, )
+	//if err != nil {
+	//	_ = ctx.Error(err)
+	//	return
+	//}
 
-	ctx.JSON(http.StatusOK, response)
+	ctx.JSON(http.StatusOK, "Order created successfully")
 }
