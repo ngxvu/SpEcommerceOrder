@@ -22,3 +22,10 @@ func (p *Producer) SendMessage(ctx context.Context, key, value string) error {
 	}
 	return p.Writer.WriteMessages(ctx, msg)
 }
+
+func (p *Producer) Close() error {
+	if p.Writer == nil {
+		return nil
+	}
+	return p.Writer.Close()
+}
