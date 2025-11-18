@@ -38,9 +38,6 @@ func main() {
 	// ensure tracer provider shutdown on process exit
 	defer func() { _ = cleanup(context.Background()) }()
 
-	kafkaApp, stopKafka := bootstrap.InitKafka(ctx)
-	defer stopKafka()
-
 	// Setup and start server
 	router := gin.Default()
 	router.Use(limit.MaxAllowed(200))
@@ -61,10 +58,11 @@ func main() {
 	}()
 
 	// Start gRPC server
-	grpcSrv, err := bootstrap.StartGRPC(app, kafkaApp)
+	grpcSrv, stopKafka, err := bootstrap.StartGRPC(app)
 	if err != nil {
 		log.Fatalf("failed to start grpc: %v", err)
 	}
+	defer stopKafka()
 
 	sigCtx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stop()

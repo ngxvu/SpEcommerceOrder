@@ -24,8 +24,8 @@ type Config struct {
 	JWTAccessTimeMinute string `env:"JWT_ACCESS_TIME_MINUTE" envDefault:"15"`
 	JWTRefreshTimeHour  string `env:"JWT_REFRESH_TIME_HOUR" envDefault:"168"`
 
-	KafkaBrokers    string `env:"KAFKA_BROKERS"`
-	KafkaTopicOrder string `env:"KAFKA_TOPIC_ORDER"`
+	KafkaBrokers                string `env:"KAFKA_BROKERS"`
+	KafkaPaymentAuthorizedTopic string `env:"KAFKA_PAYMENT_AUTHORIZED_TOPIC"`
 
 	// gRPC and HTTP ports
 	GRPCPort string `env:"GRPC_PORT" envDefault:"50051"`

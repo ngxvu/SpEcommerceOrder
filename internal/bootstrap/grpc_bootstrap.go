@@ -11,13 +11,12 @@ import (
 	"order/internal/metrics"
 	repo "order/internal/repositories"
 	"order/internal/services"
-	workers "order/internal/workers"
-	"order/pkg/core/kafka"
+	"order/internal/workers"
 	"strconv"
 	"time"
 )
 
-func StartGRPC(app *AppSetup, kafkaApp *kafka.App) (*server.GRPCServer, error) {
+func StartGRPC(app *AppSetup) (*server.GRPCServer, func(), error) {
 
 	// grpcPort using for grpc server to transport gRPC requests
 	grpcPort, err := strconv.Atoi(app.AppConfig.GRPCPort)
@@ -57,12 +56,15 @@ func StartGRPC(app *AppSetup, kafkaApp *kafka.App) (*server.GRPCServer, error) {
 		grpc.WithUnaryInterceptor(metrics.UnaryClientInterceptor("order")),
 	)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	paymentClient := paymentclient.NewPaymentGRPCClient(connection)
 	orderService := services.NewOrderService(orderRepo, newPgRepo, paymentClient, outboxRepo)
-	handler := handlers.NewOrderHandler(*orderService, kafkaApp)
+
+	_, stopKafka := InitKafka(context.Background(), *orderService)
+
+	handler := handlers.NewOrderHandler(orderService)
 
 	grpcServer := server.NewGRPCServer(handler, grpcAddr, httpAddr)
 
@@ -77,5 +79,5 @@ func StartGRPC(app *AppSetup, kafkaApp *kafka.App) (*server.GRPCServer, error) {
 		}
 	}()
 
-	return grpcServer, nil
+	return grpcServer, stopKafka, nil
 }

@@ -4,7 +4,7 @@ services:
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     ports:
-      - "9092:9090"
+      - "9095:9090"
     networks:
       - observability
 

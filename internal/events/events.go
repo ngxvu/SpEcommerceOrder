@@ -4,6 +4,8 @@ package events
 type EventType string
 type AggregateType string
 
+type PaymentStatus string
+
 const (
 	// Event types
 	EventPaymentRequired EventType = "payment_required"
@@ -14,6 +16,13 @@ const (
 	AggregateOrder AggregateType = "order"
 	AggregateUser  AggregateType = "user"
 	// add more aggregate types here...
+
+	// PaymentPending describes a payment that is created but not yet processed
+	PaymentPending PaymentStatus = "PENDING"
+	// PaymentAuthorized describes a payment that has been successfully authorized
+	PaymentAuthorized PaymentStatus = "AUTHORIZED"
+	// PaymentDeclined describes a payment that has been declined
+	PaymentDeclined PaymentStatus = "DECLINED"
 )
 
 // Helpers (optional)

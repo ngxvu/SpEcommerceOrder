@@ -3,10 +3,10 @@ services:
 #using the command:
 #  docker-compose --env-file <path_to_.env_file> -f <path_to_docker_compose_yml_file> up
 #  for example:
-#  docker-compose --env-file C:\Users\NGUYe\GolandProjects\Basesource\base-source\.env -f C:\Users\NGUYe\GolandProjects\Basesource\base-source\core\db\docker-compose.yml up
+#  docker-compose --env-file C:\Users\NGUYe\GolandProjects\Basesource\base-source\.env -f C:\Users\NGUYe\GolandProjects\Basesource\base-source\core\db\docker-compose.observability.yml up
   base-db:
     image: postgres:17-alpine
-    container_name: base-db
+    container_name: order-db
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}

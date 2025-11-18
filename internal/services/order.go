@@ -13,7 +13,6 @@ import (
 	"order/internal/models"
 	"order/internal/repositories"
 	pgGorm "order/internal/repositories/pg-gorm"
-	"order/pkg/core/kafka"
 	"order/pkg/core/logger"
 	"order/pkg/http/utils/app_errors"
 	"order/pkg/proto/paymentpb"
@@ -29,6 +28,7 @@ type OrderService struct {
 
 type OrderServiceInterface interface {
 	CreateOrder(ctx context.Context, orderRequest models.CreateOrderRequest) (*models.CreateOrderResponse, error)
+	UpdateOrderStatus(ctx context.Context, orderID uuid.UUID, status events.PaymentStatus) error
 }
 
 func NewOrderService(
@@ -48,7 +48,6 @@ func NewOrderService(
 func (oS *OrderService) CreateOrder(
 	ctx context.Context,
 	orderRequest models.CreateOrderRequest,
-	producer *kafka.Producer,
 ) (*models.CreateOrderResponse, error) {
 
 	log := logger.WithTag("OrderService|CreateOrder")
@@ -69,7 +68,6 @@ func (oS *OrderService) CreateOrder(
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "create order failed")
 		return nil, err
-
 		err = app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
 		// logger
 		logger.LogError(log, err, "failed to create order")
@@ -118,4 +116,39 @@ func (oS *OrderService) CreateOrder(
 
 	span.SetStatus(codes.Ok, "created")
 	return createOrderResp, nil
+}
+
+func (oS *OrderService) UpdateOrderStatus(ctx context.Context, orderID uuid.UUID, status events.PaymentStatus) error {
+	log := logger.WithTag("OrderService|UpdateOrderStatus")
+
+	tracer := otel.Tracer("order/service")
+	ctx, span := tracer.Start(ctx, "OrderService.UpdateOrderStatus",
+		trace.WithAttributes(attribute.String("order_id", orderID.String()),
+			attribute.String("status", string(status))))
+	defer span.End()
+
+	tx := oS.newPgRepo.GetRepo().Begin()
+	defer tx.Rollback()
+
+	err := oS.repo.UpdateOrderStatus(ctx, orderID, status)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "update order status failed")
+
+		err = app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
+		logger.LogError(log, err, "failed to update order status")
+		return err
+	}
+
+	if err = tx.Commit().Error; err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "commit failed")
+
+		err = app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
+		logger.LogError(log, err, "failed to commit tx")
+		return err
+	}
+
+	span.SetStatus(codes.Ok, "updated order status")
+	return nil
 }

@@ -2,7 +2,9 @@ package repo
 
 import (
 	"context"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"order/internal/events"
 	model "order/internal/models"
 	pgGorm "order/internal/repositories/pg-gorm"
 	"order/pkg/http/utils"
@@ -18,6 +20,7 @@ func NewOrderRepository(newPgRepo pgGorm.PGInterface) *OrderRepository {
 
 type OrderRepoInterface interface {
 	CreateOrder(ctx context.Context, tx *gorm.DB, orderRequest *model.CreateOrderRequest) (*model.CreateOrderResponse, error)
+	UpdateOrderStatus(ctx context.Context, orderID uuid.UUID, status events.PaymentStatus) error
 }
 
 func (a *OrderRepository) CreateOrder(ctx context.Context, tx *gorm.DB, orderRequest *model.CreateOrderRequest) (*model.CreateOrderResponse, error) {
@@ -61,4 +64,18 @@ func (a *OrderRepository) CreateOrder(ctx context.Context, tx *gorm.DB, orderReq
 	}
 
 	return response, nil
+}
+
+func (a *OrderRepository) UpdateOrderStatus(ctx context.Context, orderID uuid.UUID, status events.PaymentStatus) error {
+
+	var cancel context.CancelFunc
+	tx, cancel := a.db.DBWithTimeout(ctx)
+	defer cancel()
+
+	if err := tx.Model(&model.Order{}).Where("id = ?", orderID).Update("status", string(status)).Error; err != nil {
+		return err
+	}
+
+	return nil
+
 }
