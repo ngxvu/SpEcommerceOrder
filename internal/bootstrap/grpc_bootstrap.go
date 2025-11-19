@@ -70,6 +70,7 @@ func StartGRPC(app *AppSetup) (*server.GRPCServer, func(), error) {
 
 	// start outbox worker properly (was previously discarded with `_ = ...`)
 	ctx := context.Background()
+
 	worker := workers.NewOutboxWorkerInit(newPgRepo, paymentClient)
 	go worker.Run(ctx)
 

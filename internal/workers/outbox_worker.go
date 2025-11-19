@@ -20,15 +20,15 @@ import (
 	"time"
 )
 
-type OutboxWorker struct {
+type OutBoxWorker struct {
 	pg       repo.PGInterface
 	payment  paymentclient.PaymentClient
 	interval time.Duration
 	limit    int
 }
 
-func NewOutboxWorkerInit(pg repo.PGInterface, pay paymentclient.PaymentClient) *OutboxWorker {
-	return &OutboxWorker{
+func NewOutboxWorkerInit(pg repo.PGInterface, pay paymentclient.PaymentClient) *OutBoxWorker {
+	return &OutBoxWorker{
 		pg:       pg,
 		payment:  pay,
 		interval: 5 * time.Second,
@@ -36,7 +36,7 @@ func NewOutboxWorkerInit(pg repo.PGInterface, pay paymentclient.PaymentClient) *
 	}
 }
 
-func (w *OutboxWorker) Run(ctx context.Context) {
+func (w *OutBoxWorker) Run(ctx context.Context) {
 
 	ticker := time.NewTicker(w.interval)
 	defer ticker.Stop()
@@ -52,10 +52,10 @@ func (w *OutboxWorker) Run(ctx context.Context) {
 	}
 }
 
-func (w *OutboxWorker) processBatch(ctx context.Context) error {
+func (w *OutBoxWorker) processBatch(ctx context.Context) error {
 
 	tracer := otel.Tracer("order/outbox-worker")
-	ctx, span := tracer.Start(ctx, "OutboxWorker.processBatch",
+	ctx, span := tracer.Start(ctx, "OutBoxWorker.processBatch",
 		trace.WithAttributes(attribute.Int("limit", w.limit)))
 	defer span.End()
 
@@ -99,7 +99,7 @@ func (w *OutboxWorker) processBatch(ctx context.Context) error {
 
 			// create span using the context (not the *gorm.DB)
 			tracer = otel.Tracer("order/outbox-worker")
-			msgCtx, msgSpan := tracer.Start(ctx, "OutboxWorker.processMessage",
+			msgCtx, msgSpan := tracer.Start(ctx, "OutBoxWorker.processMessage",
 				trace.WithAttributes(attribute.String("event_id", o.EventID.String()), attribute.String("event_type", o.EventType)))
 			defer msgSpan.End()
 

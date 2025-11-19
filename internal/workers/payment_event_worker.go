@@ -43,5 +43,5 @@ func (w *PaymentEventWorker) Handle(ctx context.Context, data []byte) {
 		return
 	}
 
-	log.Printf("order %s updated to PAID by payment event", orderID.String())
+	log.Printf("order %s updated to Authorized by payment event", orderID.String())
 }
