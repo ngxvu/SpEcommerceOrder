@@ -15,7 +15,8 @@ import (
 // It returns the kafka.App instance and a stop function to gracefully shut down.
 func InitKafka(
 	parent context.Context,
-	orderService services.OrderServiceInterface) (
+	orderService services.OrderServiceInterface,
+	promotionService services.PromotionServiceInterface) (
 	*kafka.App, func() error, error) {
 	cfg := configloader.GetConfig()
 
@@ -49,13 +50,11 @@ func InitKafka(
 			w := workers.NewPaymentEventWorker(orderService, app.Producers[string(events.PromotionRewardTopic)])
 			go c.Listen(ctx, func(data []byte) { w.Handle(ctx, data) })
 
-			// if we have a payment_authorized topic, use it for payment worker
-			//case "promotion_rewards":
-			//	c := kafka.NewConsumer(cfg.KafkaBrokers, topic, "promotion_group")
-			//	app.Consumers[topic] = c
-			//	w := workers.NewPromotionRewardWorker(orderService)
-			//	go c.Listen(ctx, func(data []byte) { w.Handle(ctx, data) })
-			//}
+		case string(events.PromotionRewardTopic):
+			c := kafka.NewConsumer(cfg.KafkaBrokers, topic, "promotion_group")
+			app.Consumers[topic] = c
+			w := workers.NewPromotionRewardWorker(promotionService)
+			go c.Listen(ctx, func(data []byte) { w.Handle(ctx, data) })
 		}
 	}
 
