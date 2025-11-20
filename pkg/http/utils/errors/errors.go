@@ -1,4 +1,4 @@
-package app_errors
+package errors
 
 import (
 	"errors"
@@ -36,7 +36,7 @@ func (er *ResponseError) Error() string {
 	return er.ErrorResp.Message
 }
 
-func AppError(err string, errType string) *ResponseError {
+func Error(err string, errType string) *ResponseError {
 	return &ResponseError{
 		ErrorResp: ErrorResponse{
 			Code:    errType,

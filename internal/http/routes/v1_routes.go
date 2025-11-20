@@ -9,14 +9,14 @@ import (
 	"order/internal/http/server"
 	"order/pkg/http/middlewares"
 	"order/pkg/http/utils"
-	"order/pkg/http/utils/app_errors"
+	"order/pkg/http/utils/errors"
 )
 
 func NewHTTPServerSetup(router *gin.Engine, configCors cors.Config, app *bootstrap.AppSetup) {
 	router.Use(cors.New(configCors))
 	router.Use(middlewares.RequestIDMiddleware())
 	router.Use(middlewares.RequestLogger(utils.APPNAME))
-	router.Use(app_errors.NewHandlerError)
+	router.Use(errors.NewHandlerError)
 
 	server.ApplicationV1Router(
 		app.PGRepoInterface,

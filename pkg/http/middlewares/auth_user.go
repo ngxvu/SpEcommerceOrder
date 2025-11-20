@@ -5,7 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
 	"order/pkg/core/configloader"
-	"order/pkg/http/utils/app_errors"
+	"order/pkg/http/utils/errors"
 	"strings"
 )
 
@@ -18,7 +18,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		signature := []byte(JWTAccessSecure)
 
 		if authHeader == "" {
-			err := app_errors.AppError("fail to authenticate", app_errors.StatusValidationError)
+			err := errors.Error("fail to authenticate", errors.StatusValidationError)
 			_ = c.Error(err)
 			c.Abort()
 			return
@@ -26,7 +26,7 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		authHeaderParts := strings.Split(authHeader, "Bearer ")
 		if len(authHeaderParts) != 2 {
-			err := app_errors.AppError("fail to authenticate", app_errors.StatusValidationError)
+			err := errors.Error("fail to authenticate", errors.StatusValidationError)
 			_ = c.Error(err)
 			c.Abort()
 			return
@@ -39,7 +39,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		})
 
 		if err != nil {
-			err := app_errors.AppError("fail to authenticate", app_errors.StatusValidationError)
+			err := errors.Error("fail to authenticate", errors.StatusValidationError)
 			_ = c.Error(err)
 			c.Abort()
 			return
@@ -51,7 +51,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		c.Set("role", role)
 
 		if !authorize(role) {
-			err := app_errors.AppError("you are not authorized to perform this action", app_errors.StatusForbidden)
+			err := errors.Error("you are not authorized to perform this action", errors.StatusForbidden)
 			_ = c.Error(err)
 			c.Abort()
 			return

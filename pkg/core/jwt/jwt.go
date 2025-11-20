@@ -7,7 +7,7 @@ import (
 	"order/pkg/core/configloader"
 	"order/pkg/core/logger"
 	"order/pkg/http/utils"
-	"order/pkg/http/utils/app_errors"
+	"order/pkg/http/utils/errors"
 	"strconv"
 	"time"
 )
@@ -49,7 +49,7 @@ func GenerateJWTTokenUser(context context.Context,
 		tokenTimeUnix *= time.Minute
 
 	default:
-		err = app_errors.AppError("Fail to Authorized", app_errors.StatusUnauthorized)
+		err = errors.Error("Fail to Authorized", errors.StatusUnauthorized)
 		logger.LogError(log, err, "invalid token type")
 	}
 

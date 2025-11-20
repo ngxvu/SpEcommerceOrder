@@ -6,7 +6,7 @@ import (
 	model "order/internal/models"
 	repo "order/internal/repositories/pg-gorm"
 	"order/internal/services"
-	"order/pkg/http/utils/app_errors"
+	"order/pkg/http/utils/errors"
 )
 
 type OrderHandler struct {
@@ -23,7 +23,7 @@ func (o *OrderHandler) CreateOrder(ctx *gin.Context) {
 
 	err := ctx.ShouldBindJSON(&requestCreateOrder)
 	if err != nil {
-		err = app_errors.AppError(app_errors.StatusBadRequest, app_errors.StatusBadRequest)
+		err = errors.Error(errors.StatusBadRequest, errors.StatusBadRequest)
 		_ = ctx.Error(err)
 		return
 	}

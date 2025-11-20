@@ -14,7 +14,7 @@ import (
 	"order/internal/repositories"
 	pgGorm "order/internal/repositories/pg-gorm"
 	"order/pkg/core/logger"
-	"order/pkg/http/utils/app_errors"
+	"order/pkg/http/utils/errors"
 	"order/pkg/proto/paymentpb"
 	"time"
 )
@@ -68,7 +68,7 @@ func (oS *OrderService) CreateOrder(
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "create order failed")
 		return nil, err
-		err = app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
+		err = errors.Error(errors.StatusInternalServerError, errors.StatusInternalServerError)
 		// logger
 		logger.LogError(log, err, "failed to create order")
 		return nil, err
@@ -100,7 +100,7 @@ func (oS *OrderService) CreateOrder(
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "create outbox failed")
 
-		err = app_errors.AppError(app_errors.StatusInternalServerError, "create outboxRepo failed")
+		err = errors.Error(errors.StatusInternalServerError, "create outboxRepo failed")
 		logger.LogError(log, err, "failed to create outboxRepo")
 		return nil, err
 	}
@@ -109,7 +109,7 @@ func (oS *OrderService) CreateOrder(
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "commit failed")
 
-		err = app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
+		err = errors.Error(errors.StatusInternalServerError, errors.StatusInternalServerError)
 		logger.LogError(log, err, "failed to commit tx")
 		return nil, err
 	}
@@ -135,7 +135,7 @@ func (oS *OrderService) UpdateOrderStatus(ctx context.Context, orderID uuid.UUID
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "update order status failed")
 
-		err = app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
+		err = errors.Error(errors.StatusInternalServerError, errors.StatusInternalServerError)
 		logger.LogError(log, err, "failed to update order status")
 		return err
 	}
@@ -144,7 +144,7 @@ func (oS *OrderService) UpdateOrderStatus(ctx context.Context, orderID uuid.UUID
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "commit failed")
 
-		err = app_errors.AppError(app_errors.StatusInternalServerError, app_errors.StatusInternalServerError)
+		err = errors.Error(errors.StatusInternalServerError, errors.StatusInternalServerError)
 		logger.LogError(log, err, "failed to commit tx")
 		return err
 	}
