@@ -6,8 +6,10 @@ import (
 )
 
 type App struct {
-	Producer *Producer
-	Consumer *Consumer
+	// Producers keyed by topic name (or logical name)
+	Producers map[string]*Producer
+	// Consumers keyed by topic name (or logical name)
+	Consumers map[string]*Consumer
 }
 
 func NewWriter(brokers, topic string) *kafka.Writer {

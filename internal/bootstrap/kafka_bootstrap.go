@@ -3,39 +3,80 @@ package bootstrap
 import (
 	"context"
 	"log"
+	"order/internal/events"
 	"order/internal/services"
 	"order/internal/workers"
 	"order/pkg/core/configloader"
 	"order/pkg/core/kafka"
+	"order/pkg/http/utils/errors"
 )
 
-// InitializeKafka returns the app and a stop function to gracefully shut down.
-func InitKafka(parent context.Context, orderService services.OrderService) (*kafka.App, func()) {
+// InitKafka initializes Kafka producers/consumers based on config and wires the payment worker.
+// It returns the kafka.App instance and a stop function to gracefully shut down.
+func InitKafka(
+	parent context.Context,
+	orderService services.OrderServiceInterface) (
+	*kafka.App, func() error, error) {
 	cfg := configloader.GetConfig()
-
-	producer := kafka.NewProducer(cfg.KafkaBrokers, cfg.KafkaPaymentAuthorizedTopic)
-	consumer := kafka.NewConsumer(cfg.KafkaBrokers, cfg.KafkaPaymentAuthorizedTopic, "payment_group")
 
 	ctx, cancel := context.WithCancel(parent)
 
-	paymentWorker := workers.NewPaymentEventWorker(&orderService)
+	app := &kafka.App{
+		Producers: make(map[string]*kafka.Producer),
+		Consumers: make(map[string]*kafka.Consumer),
+	}
 
-	go consumer.Listen(ctx, func(data []byte) {
-		paymentWorker.Handle(ctx, data)
-	})
+	// Set up producers for all configured topics
+	for _, topic := range cfg.KafkaTopics {
+		prod := kafka.NewProducer(cfg.KafkaBrokers, topic)
 
-	stop := func() {
-		cancel()
-		if err := producer.Close(); err != nil {
-			log.Printf("producer close error: %v", err)
+		// store in app producers map
+		app.Producers[topic] = prod
+	}
+
+	// For now, set up consumer only for the payment_authorized topic
+	var paymentTopic string
+	for _, topic := range cfg.KafkaTopics {
+		if paymentTopic != "" {
+			err := errors.Error(errors.StatusInternalServerError, errors.StatusValidationError)
+			return nil, nil, err
+			break
 		}
-		if err := consumer.Reader.Close(); err != nil {
-			log.Printf("consumer close error: %v", err)
+		switch topic {
+		case string(events.PaymentAuthorizationTopic):
+			c := kafka.NewConsumer(cfg.KafkaBrokers, topic, "payment_group")
+			app.Consumers[topic] = c
+			w := workers.NewPaymentEventWorker(orderService, app.Producers[string(events.PromotionRewardTopic)])
+			go c.Listen(ctx, func(data []byte) { w.Handle(ctx, data) })
+
+			// if we have a payment_authorized topic, use it for payment worker
+			//case "promotion_rewards":
+			//	c := kafka.NewConsumer(cfg.KafkaBrokers, topic, "promotion_group")
+			//	app.Consumers[topic] = c
+			//	w := workers.NewPromotionRewardWorker(orderService)
+			//	go c.Listen(ctx, func(data []byte) { w.Handle(ctx, data) })
+			//}
 		}
 	}
 
-	return &kafka.App{
-		Producer: producer,
-		Consumer: consumer,
-	}, stop
+	stop := func() error {
+		cancel()
+		// close all producers
+		for topic, p := range app.Producers {
+			if err := p.Close(); err != nil {
+				log.Printf("producer[%s] close error: %v", topic, err)
+				return err
+			}
+		}
+		// close all consumers
+		for topic, c := range app.Consumers {
+			if err := c.Reader.Close(); err != nil {
+				log.Printf("consumer[%s] close error: %v", topic, err)
+				return err
+			}
+		}
+		return nil
+	}
+
+	return app, stop, nil
 }
