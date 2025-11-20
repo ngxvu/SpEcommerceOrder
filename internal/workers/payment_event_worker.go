@@ -9,14 +9,16 @@ import (
 	"github.com/google/uuid"
 	"order/internal/models"
 	"order/internal/services"
+	"order/pkg/core/kafka"
 )
 
 type PaymentEventWorker struct {
 	orderService services.OrderServiceInterface
+	producer     *kafka.Producer
 }
 
-func NewPaymentEventWorker(orderService services.OrderServiceInterface) *PaymentEventWorker {
-	return &PaymentEventWorker{orderService: orderService}
+func NewPaymentEventWorker(orderService services.OrderServiceInterface, producer *kafka.Producer) *PaymentEventWorker {
+	return &PaymentEventWorker{orderService: orderService, producer: producer}
 }
 
 func (w *PaymentEventWorker) Handle(ctx context.Context, data []byte) {
@@ -38,8 +40,23 @@ func (w *PaymentEventWorker) Handle(ctx context.Context, data []byte) {
 	}
 
 	// gọi service để cập nhật trạng thái đơn hàng
-	if err := w.orderService.UpdateOrderStatus(ctx, orderID, events.PaymentAuthorized); err != nil {
+	if err = w.orderService.UpdateOrderStatus(ctx, orderID, events.PaymentAuthorized); err != nil {
 		log.Printf("failed to update order status: %v", err)
+		return
+	}
+
+	promotionEvent := models.PromotionRewardEvent{
+		OrderID: evt.OrderID,
+	}
+
+	eventData, err := json.Marshal(promotionEvent)
+	if err != nil {
+		log.Printf("failed to marshal promotion event: %v", err)
+		return
+	}
+
+	if err = w.producer.SendMessage(ctx, evt.OrderID, string(eventData)); err != nil {
+		log.Printf("failed to send promotion event: %v", err)
 		return
 	}
 

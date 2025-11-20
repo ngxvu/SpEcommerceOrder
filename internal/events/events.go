@@ -4,6 +4,7 @@ package events
 type EventType string
 type AggregateType string
 type PaymentStatus string
+
 type TopicType string
 
 const (

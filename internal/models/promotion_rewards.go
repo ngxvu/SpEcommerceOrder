@@ -17,3 +17,7 @@ type PromotionReward struct {
 func (PromotionReward) TableName() string {
 	return "promotion_rewards"
 }
+
+type PromotionRewardEvent struct {
+	OrderID string `json:"order_id"`
+}

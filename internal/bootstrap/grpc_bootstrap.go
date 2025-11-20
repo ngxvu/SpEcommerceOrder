@@ -36,14 +36,19 @@ func StartGRPC(app *AppSetup) (*server.GRPCServer, func() error, error) {
 	orderRepo := repo.NewOrderRepository(newPgRepo)
 	outboxRepo := repo.NewOutboxRepository(newPgRepo)
 
+	promotionRepo := repo.NewPromotionRepository(newPgRepo)
+
 	// create gRPC connection to payment service and build payment client
 	paymentAddr := app.AppConfig.PaymentServiceAddr
 	if paymentAddr == "" {
 		paymentAddr = "localhost:50052"
 	}
 
+	// start outbox worker properly (was previously discarded with `_ = ...`)
+	ctx := context.Background()
+
 	// Dial context with timeout
-	dialCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	dialCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	// conn is connection to payment gRPC service
@@ -61,8 +66,9 @@ func StartGRPC(app *AppSetup) (*server.GRPCServer, func() error, error) {
 
 	paymentClient := paymentclient.NewPaymentGRPCClient(connection)
 	orderService := services.NewOrderService(orderRepo, newPgRepo, paymentClient, outboxRepo)
+	promotionService := services.NewPromotionService(promotionRepo, outboxRepo, orderRepo)
 
-	_, stopKafka, err := InitKafka(context.Background(), orderService)
+	_, stopKafka, err := InitKafka(ctx, orderService, promotionService)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -70,9 +76,6 @@ func StartGRPC(app *AppSetup) (*server.GRPCServer, func() error, error) {
 	handler := handlers.NewOrderHandler(orderService)
 
 	grpcServer := server.NewGRPCServer(handler, grpcAddr, httpAddr)
-
-	// start outbox worker properly (was previously discarded with `_ = ...`)
-	ctx := context.Background()
 
 	worker := workers.NewOutboxWorkerInit(newPgRepo, paymentClient)
 	go worker.Run(ctx)

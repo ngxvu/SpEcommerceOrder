@@ -21,6 +21,20 @@ func NewOrderRepository(newPgRepo pgGorm.PGInterface) *OrderRepository {
 type OrderRepoInterface interface {
 	CreateOrder(ctx context.Context, tx *gorm.DB, orderRequest *model.CreateOrderRequest) (*model.CreateOrderResponse, error)
 	UpdateOrderStatus(ctx context.Context, orderID uuid.UUID, status events.PaymentStatus) error
+	GetByID(ctx context.Context, orderID uuid.UUID) (*model.Order, error)
+}
+
+func (a *OrderRepository) GetByID(ctx context.Context, orderID uuid.UUID) (*model.Order, error) {
+	var cancel context.CancelFunc
+	tx, cancel := a.db.DBWithTimeout(ctx)
+	defer cancel()
+
+	var order model.Order
+	if err := tx.Preload("OrderItems").Where("id = ?", orderID).First(&order).Error; err != nil {
+		return nil, err
+	}
+
+	return &order, nil
 }
 
 func (a *OrderRepository) CreateOrder(ctx context.Context, tx *gorm.DB, orderRequest *model.CreateOrderRequest) (*model.CreateOrderResponse, error) {
