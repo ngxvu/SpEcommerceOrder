@@ -3,10 +3,8 @@ package jwt
 import (
 	"context"
 	"github.com/golang-jwt/jwt/v4"
-	model "order/internal/models"
 	"order/pkg/core/configloader"
 	"order/pkg/core/logger"
-	"order/pkg/http/utils"
 	"order/pkg/http/utils/errors"
 	"strconv"
 	"time"
@@ -83,21 +81,21 @@ func GenerateJWTTokenUser(context context.Context,
 	return
 }
 
-func SecAuthUserMapper(user *model.User,
-	accessTokenClaims,
-	refreshTokenClaims *AppToken) *JWTTokenResponseData {
-
-	userID := utils.UUIDtoString(user.ID)
-
-	return &JWTTokenResponseData{
-		JWTAccessToken:            accessTokenClaims.Token,
-		JWTRefreshToken:           refreshTokenClaims.Token,
-		ExpirationAccessDateTime:  accessTokenClaims.ExpirationTime,
-		ExpirationRefreshDateTime: refreshTokenClaims.ExpirationTime,
-		Profile: DataUserAuthenticated{
-			ID:    userID,
-			Name:  user.Name,
-			Email: user.Email,
-		},
-	}
-}
+//func SecAuthUserMapper(user *model.User,
+//	accessTokenClaims,
+//	refreshTokenClaims *AppToken) *JWTTokenResponseData {
+//
+//	userID := utils.UUIDtoString(user.ID)
+//
+//	return &JWTTokenResponseData{
+//		JWTAccessToken:            accessTokenClaims.Token,
+//		JWTRefreshToken:           refreshTokenClaims.Token,
+//		ExpirationAccessDateTime:  accessTokenClaims.ExpirationTime,
+//		ExpirationRefreshDateTime: refreshTokenClaims.ExpirationTime,
+//		Profile: DataUserAuthenticated{
+//			ID:    userID,
+//			Name:  user.Name,
+//			Email: user.Email,
+//		},
+//	}
+//}
