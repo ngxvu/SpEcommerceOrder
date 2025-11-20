@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-func StartGRPC(app *AppSetup) (*server.GRPCServer, func(), error) {
+func StartGRPC(app *AppSetup) (*server.GRPCServer, func() error, error) {
 
 	// grpcPort using for grpc server to transport gRPC requests
 	grpcPort, err := strconv.Atoi(app.AppConfig.GRPCPort)
@@ -62,7 +62,10 @@ func StartGRPC(app *AppSetup) (*server.GRPCServer, func(), error) {
 	paymentClient := paymentclient.NewPaymentGRPCClient(connection)
 	orderService := services.NewOrderService(orderRepo, newPgRepo, paymentClient, outboxRepo)
 
-	_, stopKafka := InitKafka(context.Background(), *orderService)
+	_, stopKafka, err := InitKafka(context.Background(), orderService)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	handler := handlers.NewOrderHandler(orderService)
 
